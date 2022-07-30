@@ -83,6 +83,7 @@ cmake_install.cmake
 include
 CMakeDoxygenDefaults.cmake
 gTest_version*.cmake
+CTestTestfile.cmake
 
 #--------------- DOXYFILE
 doc/html
