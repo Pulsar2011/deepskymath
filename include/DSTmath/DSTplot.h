@@ -9,6 +9,8 @@
 //	Copyright (c) 2015, All rights reserved
 //
 
+#ifndef __DST_MATH_PLOT__
+#define __DST_MATH_PLOT__
 #include <vector>
 #include <map>
 #include <limits>
@@ -105,3 +107,5 @@ namespace DST
         };
     }
 }
+
+#endif

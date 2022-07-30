@@ -9,7 +9,8 @@
 //	Copyright (c) 2015, All rights reserved
 //
 
-#include "splinefit_utils.h"
+#include <DSTmath/splinefit_utils.h>
+#ifdef _HAS_ROOT_
 
 namespace DST
 {
@@ -545,8 +546,6 @@ namespace DST
                 std::cout<<exp(fyknots[n])<<std::endl;
         }
 
-
-#ifdef _HAS_ROOT_
         
 #pragma mark - spline_fit class implementation
         
@@ -863,7 +862,6 @@ namespace DST
             }
             return C;
         }
-#endif
-        
-    }
+        }
 }
+#endif

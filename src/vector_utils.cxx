@@ -16,23 +16,25 @@
 #include <gsl/gsl_randist.h>
 #include <algorithm>
 
-#include "vector_utils.h"
+#include <DSTmath/vector_utils.h>
 #include <stdarg.h>
 
 namespace DST
 {
+  namespace Math
+  {
   bool vector_utils::_debug_ = false;
 
   bool
   vector_utils::is_debug()
   {
-      return DST::vector_utils::_debug_;
+      return DST::Math::vector_utils::_debug_;
   }
 
   void
   vector_utils::set_debug ( bool debug_ )
   {
-    DST::vector_utils::_debug_ = debug_;
+    DST::Math::vector_utils::_debug_ = debug_;
   }
 
 
@@ -626,6 +628,5 @@ namespace DST
   }
 
 
-} // end of namespace utilities
-
-// end of vector_utils.cc
+} 
+}

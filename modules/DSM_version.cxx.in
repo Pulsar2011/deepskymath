@@ -1,8 +1,7 @@
 #include <DSTmath/DSM_version.h> //update as appropriate
+using namespace DST::Math;
 
 // Namespace DSM stand For DeepSkyMath.
-namespace DSM
-{
   gGIT *gGIT::this_ver = NULL;
   
   gGIT::gGIT():_VERSION("@VERSION@"),_VERSION_SHORT("@VERSION_SHORT@"),_VERSION_SHA1("@VERSION_SHA1@")
@@ -256,4 +255,3 @@ namespace DSM
       
     return !((*this_ver) == ver);
   }
-}

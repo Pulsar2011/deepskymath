@@ -9,7 +9,7 @@
 //	Copyright (c) 2015, All rights reserved
 //
 
-#include "DSTplot.h"
+#include <DSTmath/DSTplot.h>
 #include <algorithm> 
 
 namespace DST

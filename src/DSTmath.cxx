@@ -10,7 +10,7 @@
 //	Copyright (c) 2015, All rights reserved
 //
 
-#include"DSTmath.h"
+#include<DSTmath/DSTmath.h>
 #include<iostream>
 #include<stdexcept>
 

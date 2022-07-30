@@ -80,6 +80,8 @@ cmake_install.cmake
 .deps
 *install_manifest.txt
 include
+CMakeDoxygenDefaults.cmake
+gTest_version*.cmake
 
 #--------------- DOXYFILE
 doc/html

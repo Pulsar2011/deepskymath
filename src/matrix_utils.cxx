@@ -6,9 +6,11 @@
 #include<cmath>
 #include<stdexcept>
 
-#include "matrix_utils.h"
+#include <DSTmath/matrix_utils.h>
 
 namespace DST {
+	namespace Math
+	{
 
   bool
   matrix_utils::is_debug()
@@ -561,6 +563,7 @@ namespace DST {
   {
   }
 
+}
 } // end of namespace utilities
 
 // end of matrix_utils.cc

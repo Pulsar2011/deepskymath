@@ -11,12 +11,8 @@
 
 #include <iostream>
 #include <iomanip>
-#include "DSTgeo.h"
-#include "DSTmath.h"
-
-#ifdef _HAS_ROOT_
-#include<TROOT.h>
-#endif
+#include <DSTmath/DSTgeo.h>
+#include <DSTmath/DSTmath.h>
 
 std::string to_string(const double a_value, const int n)
 {

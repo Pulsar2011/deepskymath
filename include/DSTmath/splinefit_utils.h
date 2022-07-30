@@ -9,16 +9,16 @@
 //	Copyright (c) 2015, All rights reserved
 //
 
-#ifndef __DeepSkyLib__splinefit_utils__
-#define __DeepSkyLib__splinefit_utils__
+#ifndef __DST_MATH_splinefit__
+#define __DST_MATH_splinefit__
+
+#ifdef _HAS_ROOT_
 
 #include <stdio.h>
 #include <algorithm>
 #include <vector>
 #include <map>
-
-
-#ifdef _HAS_ROOT_
+#include <string>
 
 #include "TSpline.h"
 #include "TGraph.h"
@@ -28,8 +28,6 @@
 #include "TH1.h"
 #include "TDirectory.h"
 #include "TMath.h"
-
-#endif
 
 typedef std::vector<double> knots;
 
@@ -42,7 +40,7 @@ namespace DST
         /**
          *  @class spline_functor splinefit_utils.h "DSTmath/splinefit_utils.h"
          *  @brief Spline fuction
-         *  @details The DST::math::spline_functor class describe a spline function wich is defined with a finite number of inflection points that are called 'knots'.
+         *  @details The DST::Math::spline_functor class describe a spline function wich is defined with a finite number of inflection points that are called 'knots'.
          */
         class spline_functor
         {
@@ -81,8 +79,10 @@ namespace DST
             knots fyknots;
             
             double fprecision;
-            
+
+#ifdef _HAS_ROOT_            
             TSpline3 *fspline;
+#endif
             
             const std::string fopt;
             double fval_start;
@@ -101,7 +101,7 @@ namespace DST
             spline_functor(unsigned int nknots,
                            double *xn,
                            spline_axes axes = spline_axes::LinLin,
-                           const std::string opt="",
+                           const std::string opt=std::string(),
                            double valbeg=0,
                            double valend=0);
             
@@ -109,20 +109,20 @@ namespace DST
                            double *xn,
                            double *yn,
                            spline_axes axes=spline_axes::LinLin,
-                           const std::string opt="",
+                           const std::string opt=std::string(),
                            double valbeg=0,
                            double valend=0);
             
             spline_functor(knots xn,
                            spline_axes axes=spline_axes::LinLin,
-                           const std::string opt="",
+                           const std::string opt=std::string(),
                            double valbeg=0,
                            double valend=0);
             
             spline_functor(knots xn,
                            knots yn,
                            spline_axes axes=spline_axes::LinLin,
-                           const std::string opt="",
+                           const std::string opt=std::string(),
                            double valbeg=0,
                            double valend=0);
             
@@ -159,7 +159,7 @@ namespace DST
 #pragma mark - spline_fit class definition
         /**
          *  @class spline_fit splinefit_utils.h "DSTmath/splinefit_utils.h"
-         *  @brief DST::math::spline_functor wrapper for TRoot
+         *  @brief DST::Math::spline_functor wrapper for TRoot
          */
         class spline_fit
         {
@@ -228,6 +228,6 @@ namespace DST
 
 
 
-
+#endif
 
 #endif /* defined(__DeepSkyLib__splinefit_utils__) */

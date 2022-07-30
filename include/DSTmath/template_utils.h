@@ -8,8 +8,8 @@
 //	Copyright (c) 2015, All rights reserved
 //
 
-#ifndef _statistic_
-#define _statistic_
+#ifndef __DST_MATH_template__
+#define __DST_MATH_template__
 
 #include <cstdio>
 #include <map>

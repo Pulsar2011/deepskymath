@@ -16,12 +16,13 @@
 
 #include "vector_utils.h"
 
-#ifndef __utilities__matrix_utils_h
-#define __utilities__matrix_utils_h 1
+#ifndef __DST_MATH_matrix__
+#define __DST_MATH_matrix__
 
 typedef std::vector<std::vector<double> > matrix_t;
 
 namespace DST {
+  namespace Math{
   
   class matrix_utils
   {
@@ -64,6 +65,7 @@ namespace DST {
   };
 
 } // end of namespace utilities
+}
 
 #endif // __utilities__matrix_utils_h
 

@@ -14,7 +14,7 @@
 #else
 #include <ctime>
 #endif
-#include "template_utils.h"
+#include <DSTmath/template_utils.h>
 
 namespace DST
 {

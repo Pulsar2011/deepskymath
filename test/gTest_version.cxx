@@ -1,12 +1,12 @@
 #include "gTest_version.h"
 #include <gtest/gtest.h>
-#include <DSS_version.h>
+#include <DSTmath/DSM_version.h>
 
-using namespace DSS;
-
-namespace DSS
+namespace DST
 {
-    class version_Tester: public DSS::gGIT
+    namespace Math
+    {
+    class version_Tester: public gGIT
     {
         protected:
         public:
@@ -19,7 +19,7 @@ namespace DSS
         std::vector<int16_t> ver = gGIT::this_ver->getVersion();
 
         ASSERT_EQ(ver.size(), 3);
-        ASSERT_EQ(gGIT::isEqual(std::string("v")+std::to_string(ver[0])+std::string(".")+std::to_string(ver[1]) +std::string(".")+std::to_string(ver[2])+std::string("-")+this_VERSION_SHA1), true)<<std::string("v")+std::to_string(ver[0])+std::string(".")+std::to_string(ver[1]) +std::string(".")+std::to_string(ver[2])+std::string("-")+this_VERSION_SHA1<<"%"<<DSS::gGIT::this_ver->version;
+        ASSERT_EQ(gGIT::isEqual(std::string("v")+std::to_string(ver[0])+std::string(".")+std::to_string(ver[1]) +std::string(".")+std::to_string(ver[2])+std::string("-")+this_VERSION_SHA1), true)<<std::string("v")+std::to_string(ver[0])+std::string(".")+std::to_string(ver[1]) +std::string(".")+std::to_string(ver[2])+std::string("-")+this_VERSION_SHA1<<"%"<<gGIT::this_ver->version;
     }
 
     TEST(version_Tester, test_readVersion)
@@ -132,6 +132,9 @@ namespace DSS
         }
     }
 }
+}
+
+using namespace DST::Math;
 
 TEST(test_version, version_equal)
 {
@@ -172,7 +175,7 @@ TEST(test_version, version_newer)
     ASSERT_EQ(gGIT::isNewerThan(this_VERSION_SHORT), true) <<gGIT::version_short()  <<" newer than "<<this_VERSION_SHORT<<" ? "<<gGIT::isNewerThan(this_VERSION_SHORT);
     ASSERT_EQ(gGIT::isOlderThan(this_VERSION_SHORT), false)<<gGIT::version_short()  <<" older than "<<this_VERSION_SHORT<<" ? "<<gGIT::isOlderThan(this_VERSION_SHORT);
 
-    std::vector<int16_t> ver = DSS::version_Tester::version_to_test();
+    std::vector<int16_t> ver = version_Tester::version_to_test();
     ASSERT_EQ(ver.size(),3);
 
     for(int k=0; k<3; k++)
