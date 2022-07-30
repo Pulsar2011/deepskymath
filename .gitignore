@@ -27,6 +27,7 @@ test_*.txt
 DST_version.cxx
 *screenlog*
 gdb
+googletest
 
 *.html
 *.tex
