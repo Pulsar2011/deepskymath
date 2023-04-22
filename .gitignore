@@ -91,3 +91,5 @@ gTest_version.h
 doc/html
 test/gTest_version.h
 src/DSM_version.cxx
+
+googletest/generated
