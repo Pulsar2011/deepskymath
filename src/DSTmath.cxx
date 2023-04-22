@@ -646,7 +646,7 @@ namespace DST
         
         
         /**
-         *  Evaluate the Chebychev polynomial expansion at \$x\$ include in the range \$[a, [b\$. The Chebyshev polynomial expansion \$\sum_{k=0}^{n-1} c_kT_k(y) − c_0/2\$ is evaluated at a point \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$.
+         *  Evaluate the Chebychev polynomial expansion at \$x\$ include in the range \$[a, [b\$. The Chebyshev polynomial expansion \$\sum_{k=0}^{n-1} c_kT_k(y) − c_0/2\$ is evaluated at a point \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$. Note that the bases convertion from x to y is done automatically. Algorithm is based on Clemshaw algorithm described in numerical reciepies howver, instead of adding \$+0.5\times C_0\$ we add \$C_0\$ such that \$T_0(y)=1\$.
          *
          *  @param x evaluate chebycgev polynom expansion at \$x\$
          *  @param a Lower edge of the range
@@ -654,7 +654,7 @@ namespace DST
          *  @param c Chebychev polynom coefficients
          *  @param n Truncate Chebychev polynom coefficients. If \$n < 0\$ all chebychev coeficient are used.
          *
-         *  @return \$\sum_{k=0}^{n-1} c_kT_k(y) − c_0/2\$ for \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$
+         *  @return \$\sum_{k=0}^{n-1} c_kT_k(y)\$ for \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$.   
          *  @cite num_rec_C
          */
         double polynom::chebev(double x, std::vector<double> c, double a, double b, unsigned int n)
@@ -662,10 +662,7 @@ namespace DST
             double d=0.0,dd=0.0,sv,y,y2;
             if ( (x-a)*(x-b) > 0.0 )
             {
-#if __cplusplus >= 199711L
                 throw std::invalid_argument("\033[31m[polynom::chebev]\033[0mx @"+std::to_string(x)+" is out-of-range ["+std::to_string(a)+" , "+std::to_string(b)+"].");
-#endif
-                return 0;
             }
             
             unsigned int m = (n > 0) ? ( (n <= c.size() )? n:c.size() ) : c.size();
@@ -680,7 +677,7 @@ namespace DST
                 dd=sv;
             }
             
-            return y*d-dd+0.5*c[0];
+            return y*d-dd+c[0];
         }
         
         /**
@@ -882,58 +879,50 @@ namespace DST
         double polynom::chebev2(double *x, std::vector<double> aij, double *a, double *b, std::vector<unsigned int> order)
         {
             if(order.size() < 1)
-            {
-                std::cerr<<"\033[1;35;47m*** [polynom::chebev2]: Errors ***"<<std::endl
-                <<"     Can't compute chebichev polynome without knowing its dimensions .\033[0m"<<std::endl;
-                return 0;
-            }
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2] Errors ***\033[0m Can't compute chebichev polynome without knowing its dimensions. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
             
             unsigned int nx = order[0];
             unsigned int ny = (order.size() >= 2)? order[1] : nx;
             
-            if(aij.size() < nx*ny)
-            {
-                std::cerr<<"\033[1;35;47m*** [polynom::chebev2]: Errors ***"<<std::endl
-                <<"     The dimensions of the truncated chebychev coeficient ar insuficient.\033[0m"<<std::endl;
-                return 0;
-            }
+            if(aij.size() < static_cast<size_t>(nx*ny))
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2] Errors ***\033[0m The dimensions of the truncated chebychev coeficient 'a' are insuficient. ["+std::to_string(__LINE__)+std::string("]")).c_str());
             
             std::vector<double> cx;
+            for(unsigned int i = 0; i < nx; i++)
+                cx.push_back(0.);
+
             std::vector<double> cy;
+            for(unsigned int j = 0; j < ny; j++)
+                cy.push_back(0.);
             
             double val = 0;
             
-            for(unsigned int i = 0; i < nx; i++)
-            for(unsigned int j = 0; j < ny; j++)
+            for(size_t i = 0; i < cx.size(); i++)
             {
-                unsigned int k = i*nx+j;
-                if(k >= aij.size())
+                if(i>0)
+                    cx[i-1] *=0;
+
+                cx[i]+=1.;
+
+                for(size_t j = 0; j < cy.size(); j++)
                 {
-                    std::cerr<<"\033[1;35;47m*** [polynom::chebev2]: Errors ***"<<std::endl
-                    <<"     The dimensions of the truncated chebychev coeficient ar insuficient.\033[0m"<<std::endl;
-                    continue;
+                    size_t k = i*static_cast<size_t>(nx)+j;
+                    if(k >= aij.size())
+                        throw std::invalid_argument(std::string("\033[31m[polynom::chebev2] Errors ***\033[0m The dimensions of the truncated chebychev coeficient 'a' are insuficient. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+                    if(j>0)
+                        cy[j-1] *=0;
+
+                    cy[j]+=1.;
+
+                    val += aij[k]*chebev(x[0],cx,a[0],b[0],cx.size())*chebev(x[1],cy,a[1],b[1],cy.size());
+
                 }
-                
-                for(unsigned int ci = 0; ci < i; ci++)
-                    cx.push_back(1.);
-                cx.push_back(1.);
-                
-                for(unsigned int cj = 0; cj < j; cj++)
-                    cy.push_back(1.);
-                cy.push_back(1.);
-               
-                /*
-                std::cout<<"--- ["<<i<<","<<j<<"] "<<aij[k]<<std::endl;
-                std::cout<<"x : order #"<<i<<": "<<chebev(x[0],cx,a[0],b[0],cx.size())<<" cx["<<cx.size()<<"]:"; for(size_t k = 0; k<cx.size(); k++)std::cout<<cx[k]<<" ";std::cout<<std::endl;
-                std::cout<<"y : order #"<<j<<": "<<chebev(x[1],cy,a[1],b[1],cy.size())<<" cy["<<cy.size()<<"]:"; for(size_t k = 0; k<cy.size(); k++)std::cout<<cy[k]<<" ";std::cout<<std::endl;
-                 */
-                
-                val += aij[k]*chebev(x[0],cx,a[0],b[0],cx.size())*chebev(x[1],cy,a[1],b[1],cy.size());
-                 
-                
-                cx.clear();
-                cy.clear();
             }
+
+            cx.clear();
+            cy.clear();
             
             return val;
             

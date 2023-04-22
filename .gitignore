@@ -84,6 +84,10 @@ include
 CMakeDoxygenDefaults.cmake
 gTest_version*.cmake
 CTestTestfile.cmake
+DSM_version.cxx
+gTest_version.h
 
 #--------------- DOXYFILE
 doc/html
+test/gTest_version.h
+src/DSM_version.cxx
