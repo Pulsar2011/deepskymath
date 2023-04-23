@@ -110,7 +110,7 @@ namespace DST
          *  @brief Obtain the sign of \f$x\f$
          *  @param x         Numerical value one want to check the sign
          *  @param is_signed Either the type of \f$x\f$ is signed or not
-         *  @return 1 if \f$x\f$ positiv, 0 if \f$x = 0\f$
+         *  @return 1 if \f$x\f$ null or positive, 0 otherwise
          */
         template <typename T> constexpr
         int sgn(T x, std::false_type is_signed)
@@ -122,7 +122,7 @@ namespace DST
          *  @brief Obtain the sign of \f$x\f$
          *  @param x         Numerical value one want to check the sign
          *  @param is_signed Either the type of \f$x\f$ is signed or not
-         *  @return 1 if \f$x\f$ positiv, 0 if \f$x = 0\f$ and -1 if \f$x\f$ negativ
+         *  @return 1 if \f$x\f$ positive, 0 if \f$x = 0\f$ and -1 if \f$x\f$ negative
          */
         template <typename T> constexpr
         int sgn(T x, std::true_type is_signed)
@@ -133,7 +133,7 @@ namespace DST
         /**
          *  @brief Obtain the sign of \f$x\f$
          *  @param x         Numerical value one want to check the sign
-         *  @return 1 if \f$x\f$ positiv, 0 if \f$x = 0\f$ and -1 if \f$x\f$ negativ
+         *  @return 1 if \f$x\f$ positive, 0 if \f$x = 0\f$ and -1 if \f$x\f$ negativ
          */
         template <typename T>  constexpr
         int sgn(T x)

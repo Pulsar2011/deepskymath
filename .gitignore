@@ -83,6 +83,7 @@ cmake_install.cmake
 include
 CMakeDoxygenDefaults.cmake
 gTest_version*.cmake
+gTest_MathCore*.cmake
 CTestTestfile.cmake
 DSM_version.cxx
 gTest_version.h
