@@ -1,5 +1,5 @@
 #include <DSTmath/DSM_version.h> //update as appropriate
-using namespace DST::Math;
+using namespace DSM;
 
 // Namespace DSM stand For DeepSkyMath.
   gGIT *gGIT::this_ver = NULL;

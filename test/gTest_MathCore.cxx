@@ -193,3 +193,57 @@ TEST(math_core_test, test_sign)
     ASSERT_EQ(sgn((double) -1e-6)==-1,true)
         <<"sgn((double)125) is positive ?!"<<sgn((double) -1e-6)<<" ["<<__LINE__<<"]"<<std::endl;
 }
+
+TEST(math_core_test, test_pi)
+{
+    ASSERT_EQ(MathCore::Pi()==std::acos(-1),true)
+        <<"Pi function doesn't return "<<std::acos(-1)<<" ["<<__LINE__<<"]"<<std::endl;
+}
+
+TEST(math_core_test, gamma_function)
+{
+    EXPECT_DOUBLE_EQ(Func::Gamma(1),1)
+        <<"Gamma(1) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(2),1)
+        <<"Gamma(2) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(3),2)
+        <<"Gamma(3) function doesn't return "<<2<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(4),6)
+        <<"Gamma(4) function doesn't return "<<6<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(5),24)
+        <<"Gamma(5) function doesn't return "<<24<<" ["<<__LINE__<<"]"<<std::endl;
+
+    EXPECT_DOUBLE_EQ(Func::Gamma(1./2.), std::sqrt(MathCore::Pi()))
+        <<"Gamma(1/2) function doesn't return "<<std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(3./2),0.5*std::sqrt(MathCore::Pi()))
+        <<"Gamma(3/2) function doesn't return "<<0.5*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(5./2),3./4.*std::sqrt(MathCore::Pi()))
+        <<"Gamma(3/4) function doesn't return "<<3./4.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(7./2),15./8.*std::sqrt(MathCore::Pi()))
+        <<"Gamma(7/2) function doesn't return "<<15./8.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
+
+    EXPECT_DOUBLE_EQ(Func::Gamma(-1./2.), -2*std::sqrt(MathCore::Pi()))
+        <<"Gamma(-1/2) function doesn't return "<<-2*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(-3./2.),4./3.*std::sqrt(MathCore::Pi()))
+        <<"Gamma(-3/2) function doesn't return "<<4./3.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
+    EXPECT_DOUBLE_EQ(Func::Gamma(-5./2),-8./15.*std::sqrt(MathCore::Pi()))
+        <<"Gamma(-5/2) function doesn't return "<<-8./15.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
+
+    EXPECT_DOUBLE_EQ(Func::Gamma(1.,std::numeric_limits<double>::max()),1)
+        <<"Gamma(1,+infinity) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
+
+    for (int i = 0; i < 100; i++)
+    for (int j = 0; j < 100; j++)
+    {
+        EXPECT_DOUBLE_EQ(Func::Gamma(-1*static_cast<double>(i),static_cast<double>(j)),1.)
+            <<"Gamma("<<-i<<","<<j<<") function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
+    }
+
+    for (int i = 1; i < 100; i++)
+    for (int j = 0; j < 100; j++)
+    {
+        EXPECT_DOUBLE_EQ(Func::Gamma(static_cast<double>(i),-1*static_cast<double>(j)),0.)
+            <<"Gamma("<<i<<","<<-j<<") function doesn't return "<<0<<" ["<<__LINE__<<"]"<<std::endl;
+    }
+
+}
