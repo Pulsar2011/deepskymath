@@ -94,12 +94,12 @@ namespace DST
     const double MathCore::Q[] =
     {
         -2.31581873324120129819E-5,
-        5.39605580493303397842E-4,
+        5.39605580493303397842E-4 ,
         -4.45641913851797240494E-3,
-        1.18139785222060435552E-2,
-        3.58236398605498653373E-2,
+        1.18139785222060435552E-2 ,
+        3.58236398605498653373E-2 ,
         -2.34591795718243348568E-1,
-        7.14304917030273074085E-2,
+        7.14304917030273074085E-2 ,
         1.00000000000000000320E0
     };
     
@@ -363,7 +363,6 @@ namespace DST
         {
             for (unsigned int i=1; i <= N; i++)
                 pom = pom * x + a[i];
-
         }
         
         return pom;
@@ -371,7 +370,7 @@ namespace DST
     
     /**
      * @details calculates a value of a polynomial of the form:
-      \f$ x^N+a[0]x^{(N-1)} + ... + a[N-1] \f$
+      \f$ x^N+a[0]x^{(N-1)}+ ... + a[N-1] \f$
      */
     double MathCore::Polynomial1eval(double x, const double* a, unsigned int N)
     {
@@ -549,11 +548,13 @@ namespace DST
                 for (unsigned int k = 0;k < f.size(); k++)
                 {
                     
-                    sum += f[k]*cos(acos(-1) * static_cast<double>( j ) * ( static_cast<double>( k ) + 0.5 )/static_cast<double> ( f.size() ));
+                    sum += f[k]*cos(Pi() * static_cast<double>( j ) * ( static_cast<double>( k ) + 0.5 )/static_cast<double> ( f.size() ));
                 }
                 
                 c.push_back(fac * sum);
             }
+
+            c[0] /= 2.;
             
             return c;
         }
@@ -576,7 +577,7 @@ namespace DST
          *  @return Array of the Chebychev polynom epxansion coeficient
          *  @cite num_rec_C
          */
-        std::vector<double> polynom::chebfit(double (*func)(double), double a, double b, unsigned int n)
+        std::vector<double> polynom::chebfit(double (*func)(double), const double& a, const double& b, const unsigned int& n)
         {
            
             double bpa, bma;
@@ -588,7 +589,7 @@ namespace DST
             
             for (unsigned int k=0;k<n;k++)
             {
-                double y=cos(acos(-1)*( static_cast<double>( k ) + 0.5 )/static_cast<double>( n ));
+                double y=cos(Pi()*( static_cast<double>( k ) + 0.5 )/static_cast<double>( n ));
                 f[k]=(*func)(y*bma+bpa);
             }
             
@@ -617,7 +618,7 @@ namespace DST
          *  @return Array of the Chebychev polynom epxansion coeficient
          *  @cite num_rec_C
          */
-        std::vector<float>  polynom::chebfit(float (*func)(float), float a, float b, unsigned int n)
+        std::vector<float>  polynom::chebfit(float (*func)(float), const float& a, const float& b, const unsigned int& n)
         {
             
             float bpa, bma;
@@ -646,7 +647,7 @@ namespace DST
         
         
         /**
-         *  Evaluate the Chebychev polynomial expansion at \$x\$ include in the range \$[a, [b\$. The Chebyshev polynomial expansion \$\sum_{k=0}^{n-1} c_kT_k(y) − c_0/2\$ is evaluated at a point \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$. Note that the bases convertion from x to y is done automatically. Algorithm is based on Clemshaw algorithm described in numerical reciepies howver, instead of adding \$+0.5\times C_0\$ we add \$C_0\$ such that \$T_0(y)=1\$.
+         *  Evaluate the Chebychev polynomial expansion at \$x\$ include in the range \$[a, [b\$. The Chebyshev polynomial expansion \$\sum_{k=0}^{n-1} c_kT_k(y) − c_0/2\$ is evaluated at a point \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$. Note that the bases convertion from x to y is done automatically. Algorithm is based on Clemshaw algorithm described in numerical reciepies howver, instead of adding \$+\times C_0\$ we add \$C_0\$ such that \$T_0(y)=1\$.
          *
          *  @param x evaluate chebycgev polynom expansion at \$x\$
          *  @param a Lower edge of the range
@@ -657,7 +658,7 @@ namespace DST
          *  @return \$\sum_{k=0}^{n-1} c_kT_k(y)\$ for \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$.   
          *  @cite num_rec_C
          */
-        double polynom::chebev(double x, std::vector<double> c, double a, double b, unsigned int n)
+        double polynom::chebev(const double& x, const std::vector<double>& c, const double& a, const double& b, unsigned int n)
         {
             double d=0.0,dd=0.0,sv,y,y2;
             if ( (x-a)*(x-b) > 0.0 )
@@ -689,10 +690,10 @@ namespace DST
          *  @param c Chebychev polynom coefficients
          *  @param n Truncate Chebychev polynom coefficients. If \$n < 0\$ all chebychev coeficient are used.
          *
-         *  @return \$\sum_{k=0}^{n-1} c_kT_k(y) − c_0/2\$ for \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$
+         *  @return \$\sum_{k=0}^{n-1} c_kT_k(y) + c_0\$ for \$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\$
          *  @cite num_rec_C
          */
-        float polynom::chebev(float x, std::vector<float> c, float a, float b, unsigned int n)
+        float polynom::chebev(const float& x, const std::vector<float>& c, const float& a, const float& b, unsigned int n)
         {
             std::vector<double> tmp;
             
@@ -732,6 +733,9 @@ namespace DST
             
             if( cder.size() != c.size() )
                 cder.resize(c.size(),0);
+
+            for(size_t k=0; k < cder.size(); k++)
+                cder[k] = 0.0;
             
             size_t n = c.size();
             
@@ -759,7 +763,7 @@ namespace DST
         void polynom::chebder(std::vector<float> c, float a, float b, std::vector<float>& cder)
         {
             std::vector<double> c_d;
-            std::vector<double> der;
+            std::vector<double> der = std::vector<double>(c.size());
             for(size_t k = 0; k < c.size(); k++)
                 c_d.push_back(static_cast<double>(c[k]));
             
@@ -768,7 +772,7 @@ namespace DST
             cder.resize(der.size(), 0);
             
             for(size_t k = 0; k < der.size(); k++)
-                cder[k] = static_cast<double>(der[k]);
+                cder[k] = static_cast<float>(der[k]);
             
             c_d.clear();
             der.clear();
@@ -778,23 +782,44 @@ namespace DST
         
         void polynom::chebinv(double y, double& x, std::vector<double> c, double a, double b)
         {
-            std::vector<double> cder;
+            std::vector<double> cder=std::vector<double>(c.size());
             chebder(c,a,b,cder);
             
             double xn    = x;
             size_t count = 0;
+            double fx = std::numeric_limits<double>::max();
+            double dfx= std::numeric_limits<double>::min();
+            double min_x =0;
+            double min_fx=std::numeric_limits<double>::max();
+            double min_dfx=std::numeric_limits<double>::max();
             
-            while( fabs(x-xn)/fabs(x) > std::numeric_limits<double>::epsilon()*10. && count != 0)
+            while( fabs(fx)/fabs(y) > std::numeric_limits<double>::epsilon())
             {
                 x = xn;
                 count ++;
                 
-                double fx  = y - chebev(x,c,a,b);
-                double dfx =     chebev(x,cder,a,b);
-                
-                xn = x - fx/dfx;
+                try
+                {
+                    fx  = y - chebev(x,c,a,b);
+                    dfx =     chebev(x,cder,a,b);
+
+                    min_fx = (fx < min_fx)?fx:min_fx;
+                    min_x  = (fx == min_fx)?x:min_x;
+                    min_dfx= (dfx < min_dfx)?dfx:min_dfx;
+                    
+                    xn = x + fx/dfx;
+                }
+                catch(...)
+                {
+                    xn = min_x + min_fx/min_dfx/2;
+                }
+
+                if(count > 10000)
+                {
+                    cder.clear();
+                    throw std::runtime_error("\033[31m[polynom::chebinv]\033[0m Too many iteration. The algorithm did not converge.");
+                }
             }
-            
             cder.clear();
         }
         

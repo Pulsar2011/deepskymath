@@ -78,15 +78,15 @@ namespace DST
             static std::vector<double> chebfit(std::vector<double>, double, double);
             
         public:
-            static std::vector<double> chebfit(double (*func)(double), double, double, unsigned int);
-            static std::vector<float>  chebfit(float  (*func)(float), float, float, unsigned int);
+            static std::vector<double> chebfit(double (*func)(double), const double&, const double&, const unsigned int&);
+            static std::vector<float>  chebfit(float  (*func)(float), const float&, const float&, const unsigned int&);
             
-            static double chebev(double, std::vector<double>, double, double, unsigned int n = 0);
-            static float  chebev(float, std::vector<float>  , float , float , unsigned int n = 0);
+            static double chebev(const double&, const std::vector<double>&, const double&, const double&, unsigned int n = 0);
+            static float  chebev(const float& , const std::vector<float>&  , const float& , const float& , unsigned int n = 0);
             static void   chebder(std::vector<double>, double, double, std::vector<double>&);
             static void   chebder(std::vector<float>, float, float, std::vector<float>&);
             
-            void chebinv(double, double&, std::vector<double>, double, double);
+            static void chebinv(double, double&, std::vector<double>, double, double);
 
 #if __cplusplus >= 199711L
             static double chebev2(double *, std::vector<double>, std::vector<double>, double *, double *, std::vector<unsigned int> order = {0,0});
