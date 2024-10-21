@@ -82,11 +82,11 @@ cmake_install.cmake
 *install_manifest.txt
 include
 CMakeDoxygenDefaults.cmake
-gTest_version*.cmake
-gTest_MathCore*.cmake
+gTest_*.cmake
 CTestTestfile.cmake
 DSM_version.cxx
 gTest_version.h
+Testing
 
 #--------------- DOXYFILE
 doc/html
