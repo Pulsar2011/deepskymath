@@ -470,3 +470,277 @@ TEST(math_core_test, chebinv)
         EXPECT_NEAR(xi,xo,std::numeric_limits<double>::epsilon()*1e6);
     }
 }
+
+TEST(math_core_test, chebev2_double)
+{
+    double lower_bound = -1;
+    double upper_bound =  1;
+    std::uniform_real_distribution<double> unif_x(lower_bound,upper_bound);
+    std::uniform_real_distribution<double> unif_y(lower_bound,upper_bound);
+    std::default_random_engine re;
+
+    double* x = new double [2]; x[0] = 0;  x[1] = 0;
+    double* a = new double [2]; a[0] = -1; a[1] = -1;
+    double* b = new double [2]; b[0] =  1; b[1] =  1;
+
+    std::vector<double> cx = {0,0,0,0,0,0,0};
+    std::vector<double> cy = {0,0,0,0,0,0,0};
+
+    for(size_t N=1; N <= std::min(cx.size(),cy.size()); N++)
+    {
+        std::vector<unsigned int> nelem = {static_cast<unsigned int>(N),static_cast<unsigned int>(N)};
+
+        for(size_t i=0; i < N; ++i)
+        {
+            for(std::vector<double>::iterator it = cx.begin(); it != cx.end(); ++it)
+                *it = 0;
+            cx[i] = 1.;
+
+            for(size_t j=0; j < N; ++j)
+            {
+                for(std::vector<double>::iterator jt = cy.begin(); jt != cy.end(); ++jt)
+                    *jt = 0;
+                
+                cy[j] = 1.;
+                
+                for(unsigned int ix =0; ix < 101; ix++)
+                {
+                    x[0] = unif_x(re);
+                    x[1] = unif_y(re);
+
+                    double px =0.;
+                    if(cx[0] == 1)
+                        px=1.;
+                    else if(cx[1] == 1)
+                        px=x[0];
+                    else if(cx[2] == 1)
+                        px=2*x[0]*x[0]-1;
+                    else if(cx[3] == 1)
+                        px=4*x[0]*x[0]*x[0]-3*x[0];
+                    else if(cx[4] == 1)
+                        px=8*x[0]*x[0]*x[0]*x[0]-8*x[0]*x[0]+1;
+                    else if(cx[5] == 1)
+                        px=16*x[0]*x[0]*x[0]*x[0]*x[0]-20*x[0]*x[0]*x[0]+5*x[0];
+                    else if(cx[6] == 1)
+                        px=32*x[0]*x[0]*x[0]*x[0]*x[0]*x[0]-48*x[0]*x[0]*x[0]*x[0]+18*x[0]*x[0]-1;
+
+                    double py =0.;
+                    if(cy[0] == 1)
+                        py=1.;
+                    else if(cy[1] == 1)
+                        py=x[1];
+                    else if(cy[2] == 1)
+                        py=2*x[1]*x[1]-1;
+                    else if(cy[3] == 1)
+                        py=4*x[1]*x[1]*x[1]-3*x[1];
+                    else if(cy[4] == 1)
+                        py=8*x[1]*x[1]*x[1]*x[1]-8*x[1]*x[1]+1;
+                    else if(cy[5] == 1)
+                        py=16*x[1]*x[1]*x[1]*x[1]*x[1]-20*x[1]*x[1]*x[1]+5*x[1];
+                    else if(cy[6] == 1)
+                        py=32*x[1]*x[1]*x[1]*x[1]*x[1]*x[1]-48*x[1]*x[1]*x[1]*x[1]+18*x[1]*x[1]-1;
+
+
+                    EXPECT_NEAR(polynom::chebev2(x, cx,cy,a,b,nelem),px*py,1e-10)<<N<<std::endl<<"    {"<<cx[0]<<","<<cx[1]<<","<<cx[2]<<","<<cx[3]<<","<<cx[4]<<","<<cx[5]<<","<<cx[6]<<"}"<<std::endl<<"    {"<<cy[0]<<","<<cy[1]<<","<<cy[2]<<","<<cy[3]<<","<<cy[4]<<","<<cy[5]<<","<<cy[6]<<"} ["<<__LINE__<<"]"<<std::endl;
+                }
+            }
+        }
+    }
+
+    delete [] x;
+    delete [] a;
+    delete [] b;
+}
+
+TEST(math_core_test, chebev2_float)
+{
+    float lower_bound = -1;
+    float upper_bound =  1;
+    std::uniform_real_distribution<float> unif_x(lower_bound,upper_bound);
+    std::uniform_real_distribution<float> unif_y(lower_bound,upper_bound);
+    std::default_random_engine re;
+
+    float* x = new float[2]; x[0] =  0; x[1] =  0;
+    float* a = new float[2]; a[0] = -1; a[1] = -1;
+    float* b = new float[2]; b[0] =  1; b[1] =  1;
+
+    std::vector<float> cx = {0,0,0,0,0,0,0};
+    std::vector<float> cy = {0,0,0,0,0,0,0};
+
+    for(size_t N=1; N <= std::min(cx.size(),cy.size()); N++)
+    {
+        std::vector<unsigned int> nelem = {static_cast<unsigned int>(N),static_cast<unsigned int>(N)};
+
+        for(size_t i=0; i < N; ++i)
+        {
+            for(std::vector<float>::iterator it = cx.begin(); it != cx.end(); ++it)
+                *it = 0;
+            cx[i] = 1.;
+
+            for(size_t j=0; j < N; ++j)
+            {
+                for(std::vector<float>::iterator jt = cy.begin(); jt != cy.end(); ++jt)
+                    *jt = 0;
+                
+                cy[j] = 1.;
+                
+                for(unsigned int ix =0; ix < 101; ix++)
+                {
+                    x[0] = unif_x(re);
+                    x[1] = unif_y(re);
+
+                    float px =0.;
+                    if(cx[0] == 1)
+                        px=1.;
+                    else if(cx[1] == 1)
+                        px=x[0];
+                    else if(cx[2] == 1)
+                        px=2*x[0]*x[0]-1;
+                    else if(cx[3] == 1)
+                        px=4*x[0]*x[0]*x[0]-3*x[0];
+                    else if(cx[4] == 1)
+                        px=8*x[0]*x[0]*x[0]*x[0]-8*x[0]*x[0]+1;
+                    else if(cx[5] == 1)
+                        px=16*x[0]*x[0]*x[0]*x[0]*x[0]-20*x[0]*x[0]*x[0]+5*x[0];
+                    else if(cx[6] == 1)
+                        px=32*x[0]*x[0]*x[0]*x[0]*x[0]*x[0]-48*x[0]*x[0]*x[0]*x[0]+18*x[0]*x[0]-1;
+
+                    float py =0.;
+                    if(cy[0] == 1)
+                        py=1.;
+                    else if(cy[1] == 1)
+                        py=x[1];
+                    else if(cy[2] == 1)
+                        py=2*x[1]*x[1]-1;
+                    else if(cy[3] == 1)
+                        py=4*x[1]*x[1]*x[1]-3*x[1];
+                    else if(cy[4] == 1)
+                        py=8*x[1]*x[1]*x[1]*x[1]-8*x[1]*x[1]+1;
+                    else if(cy[5] == 1)
+                        py=16*x[1]*x[1]*x[1]*x[1]*x[1]-20*x[1]*x[1]*x[1]+5*x[1];
+                    else if(cy[6] == 1)
+                        py=32*x[1]*x[1]*x[1]*x[1]*x[1]*x[1]-48*x[1]*x[1]*x[1]*x[1]+18*x[1]*x[1]-1;
+
+
+                    EXPECT_NEAR(polynom::chebev2(x, cx,cy,a,b,nelem),px*py,1e-5)<<N<<std::endl<<"    {"<<cx[0]<<","<<cx[1]<<","<<cx[2]<<","<<cx[3]<<","<<cx[4]<<","<<cx[5]<<","<<cx[6]<<"}"<<std::endl<<"    {"<<cy[0]<<","<<cy[1]<<","<<cy[2]<<","<<cy[3]<<","<<cy[4]<<","<<cy[5]<<","<<cy[6]<<"} ["<<__LINE__<<"]"<<std::endl;
+                }
+            }
+        }
+    }
+
+    delete [] x;
+    delete [] a;
+    delete [] b;
+}
+
+TEST(math_core_test, chebev2_2Kind_double)
+{
+    double lower_bound = -1;
+    double upper_bound =  1;
+    std::uniform_real_distribution<double> unif_x(lower_bound,upper_bound);
+    std::uniform_real_distribution<double> unif_y(lower_bound,upper_bound);
+    std::default_random_engine re;
+
+    double* x = new double [2]; x[0] = 0;  x[1] = 0;
+    double* a = new double [2]; a[0] = -1; a[1] = -1;
+    double* b = new double [2]; b[0] =  1; b[1] =  1;
+
+    std::vector<double> cx = std::vector<double>(6,0);
+    std::vector<double> cy = std::vector<double>(6,0);
+
+    std::vector<double> aij = std::vector<double>(cx.size()*cy.size(),0);
+    
+    for(size_t N=1; N <= cx.size(); N++)
+    {
+        for(size_t i=0; i < N; ++i)
+        {
+            for(unsigned int ii = 0; ii < N; ii++)
+                cx.push_back(((ii+1)==N)?1.:0.);
+
+            for(size_t j=0; j < N; j++)
+            {
+                for(unsigned int jj = 0; jj < N; jj++)
+                    cy.push_back(((jj+1)==N)?1.:0.);
+
+                for(std::vector<double>::iterator it = aij.begin(); it != aij.end(); ++it)
+                    *it = 0;
+
+                size_t k = i*N+j;
+
+                std::vector<unsigned int> nelem = {static_cast<unsigned int>(N),static_cast<unsigned int>(N)};
+
+                for(unsigned int ix =0; ix < 101; ix++)
+                {
+                    x[0] = unif_x(re);
+                    x[1] = unif_y(re);
+
+                    EXPECT_NEAR(polynom::chebev2(x, aij,a,b,nelem),aij[k]*polynom::chebev(x[0],cx,a[0],b[0],cx.size())*polynom::chebev(x[1],cy,a[1],b[1],cy.size()),1e-10)<<N<<std::endl;
+                }
+
+                cy.clear();
+            }
+
+            cx.clear();
+        }
+    }
+
+    delete [] x;
+    delete [] a;
+    delete [] b;
+}
+
+TEST(math_core_test, chebev2_2Kind_float)
+{
+    float lower_bound = -1;
+    float upper_bound =  1;
+    std::uniform_real_distribution<float> unif_x(lower_bound,upper_bound);
+    std::uniform_real_distribution<float> unif_y(lower_bound,upper_bound);
+    std::default_random_engine re;
+
+    float* x = new float [2]; x[0] = 0;  x[1] = 0;
+    float* a = new float [2]; a[0] = -1; a[1] = -1;
+    float* b = new float [2]; b[0] =  1; b[1] =  1;
+
+    std::vector<float> cx = std::vector<float>(6,0);
+    std::vector<float> cy = std::vector<float>(6,0);
+
+    std::vector<float> aij = std::vector<float>(cx.size()*cy.size(),0);
+    
+    for(size_t N=1; N <= cx.size(); N++)
+    {
+        for(size_t i=0; i < N; ++i)
+        {
+            for(unsigned int ii = 0; ii < N; ii++)
+                cx.push_back(((ii+1)==N)?1.:0.);
+
+            for(size_t j=0; j < N; j++)
+            {
+                for(unsigned int jj = 0; jj < N; jj++)
+                    cy.push_back(((jj+1)==N)?1.:0.);
+
+                for(std::vector<float>::iterator it = aij.begin(); it != aij.end(); ++it)
+                    *it = 0;
+
+                size_t k = i*N+j;
+
+                std::vector<unsigned int> nelem = {static_cast<unsigned int>(N),static_cast<unsigned int>(N)};
+
+                for(unsigned int ix =0; ix < 101; ix++)
+                {
+                    x[0] = unif_x(re);
+                    x[1] = unif_y(re);
+
+                    EXPECT_NEAR(polynom::chebev2(x, aij,a,b,nelem),aij[k]*polynom::chebev(x[0],cx,a[0],b[0],cx.size())*polynom::chebev(x[1],cy,a[1],b[1],cy.size()),1e-10)<<N<<std::endl;
+                }
+
+                cy.clear();
+            }
+
+            cx.clear();
+        }
+    }
+
+    delete [] x;
+    delete [] a;
+    delete [] b;
+}

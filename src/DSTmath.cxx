@@ -843,10 +843,10 @@ namespace DST
                 m[0] = (order[0] > 0)? ((order[0] < cx.size() )?order[0]:cx.size()) : 1;
 
             if(order.size() > 1)
-                m[1] = (order[1] > 0)? ((order[1] < cy.size() )?order[1]:cy.size()) :1;
+                m[1] = (order[1] > 0)? ((order[1] < cy.size() )?order[1]:cy.size()) : 1;
 
             double valx =  chebev(x[0],cx,a[0],b[0],m[0]);
-            double valy = chebev(x[1],cy,a[1],b[1],m[1]);
+            double valy =  chebev(x[1],cy,a[1],b[1],m[1]);
            
             m.clear();
             
