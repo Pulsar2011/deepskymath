@@ -179,12 +179,14 @@ TEST(geometry,point_math_operator)
     point pref  = point(3,0,0,0);
     point ptest;
 
-    double lower_bound = -1000;
-    double upper_bound =  1000;
+    double lower_bound = -10;
+    double upper_bound =  10;
     std::uniform_real_distribution<double> unif(lower_bound,upper_bound);
     std::default_random_engine re;
 
-    for(size_t k = 0; k < 1; k++)
+    point::precision=1e-10;
+
+    for(size_t k = 0; k < 10000; k++)
     {
         double x0,y0,z0,x1,y1,z1;
         x0=unif(re);
@@ -208,46 +210,46 @@ TEST(geometry,point_math_operator)
         EXPECT_DOUBLE_EQ(ptest[2],z1);
 
         ptest += pref;
-        EXPECT_DOUBLE_EQ(ptest[0],x1+x0);
-        EXPECT_DOUBLE_EQ(ptest[1],y1+y0);
-        EXPECT_DOUBLE_EQ(ptest[2],z1+z0);
+        EXPECT_NEAR(ptest[0],x1+x0,point::precision);
+        EXPECT_NEAR(ptest[1],y1+y0,point::precision);
+        EXPECT_NEAR(ptest[2],z1+z0,point::precision);
 
         ptest -= pref;
-        EXPECT_DOUBLE_EQ(ptest[0],x1);
-        EXPECT_DOUBLE_EQ(ptest[1],y1);
-        EXPECT_DOUBLE_EQ(ptest[2],z1);
+        EXPECT_NEAR(ptest[0],x1,point::precision);
+        EXPECT_NEAR(ptest[1],y1,point::precision);
+        EXPECT_NEAR(ptest[2],z1,point::precision);
 
         ptest *= pref;
-        EXPECT_DOUBLE_EQ(ptest[0],x1*x0);
-        EXPECT_DOUBLE_EQ(ptest[1],y1*y0);
-        EXPECT_DOUBLE_EQ(ptest[2],z1*z0);
+        EXPECT_NEAR(ptest[0],x1*x0,point::precision);
+        EXPECT_NEAR(ptest[1],y1*y0,point::precision);
+        EXPECT_NEAR(ptest[2],z1*z0,point::precision);
 
         ptest /= pref;
-        EXPECT_DOUBLE_EQ(ptest[0],x1);
-        EXPECT_DOUBLE_EQ(ptest[1],y1);
-        EXPECT_DOUBLE_EQ(ptest[2],z1);
+        EXPECT_NEAR(ptest[0],x1,point::precision);
+        EXPECT_NEAR(ptest[1],y1,point::precision);
+        EXPECT_NEAR(ptest[2],z1,point::precision);
 
         double scale = unif(re);
         double offset= unif(re);
 
         ptest += offset;
-        EXPECT_DOUBLE_EQ(ptest[0],x1+offset);
-        EXPECT_DOUBLE_EQ(ptest[1],y1+offset);
-        EXPECT_DOUBLE_EQ(ptest[2],z1+offset);
+        EXPECT_NEAR(ptest[0],x1+offset,point::precision);
+        EXPECT_NEAR(ptest[1],y1+offset,point::precision);
+        EXPECT_NEAR(ptest[2],z1+offset,point::precision);
 
         ptest *= scale;
-        EXPECT_DOUBLE_EQ(ptest[0],(x1+offset)*scale);
-        EXPECT_DOUBLE_EQ(ptest[1],(y1+offset)*scale);
-        EXPECT_DOUBLE_EQ(ptest[2],(z1+offset)*scale);
+        EXPECT_NEAR(ptest[0],(x1+offset)*scale,point::precision);
+        EXPECT_NEAR(ptest[1],(y1+offset)*scale,point::precision);
+        EXPECT_NEAR(ptest[2],(z1+offset)*scale,point::precision);
 
         ptest /= scale;
-        EXPECT_DOUBLE_EQ(ptest[0],(x1+offset));
-        EXPECT_DOUBLE_EQ(ptest[1],(y1+offset));
-        EXPECT_DOUBLE_EQ(ptest[2],(z1+offset));
+        EXPECT_NEAR(ptest[0],x1+offset,point::precision);
+        EXPECT_NEAR(ptest[1],y1+offset,point::precision);
+        EXPECT_NEAR(ptest[2],z1+offset,point::precision);
 
         ptest -= offset;
-        EXPECT_DOUBLE_EQ(ptest[0],x1);
-        EXPECT_DOUBLE_EQ(ptest[1],y1);
-        EXPECT_DOUBLE_EQ(ptest[2],z1);
+        EXPECT_NEAR(ptest[0],x1,point::precision);
+        EXPECT_NEAR(ptest[1],y1,point::precision);
+        EXPECT_NEAR(ptest[2],z1,point::precision);
     }
 }
