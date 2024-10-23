@@ -14,18 +14,6 @@
 #include <DSTmath/DSTgeo.h>
 #include <DSTmath/DSTmath.h>
 
-std::string to_string(const double a_value, const int n)
-{
-    std::ostringstream sout;
-    sout << std::scientific << std::setprecision(n) << a_value;
-    return sout.str();
-}
-
-std::string to_string(const float a_value, const int n)
-{
-    return to_string(static_cast<const double>( a_value ), n);
-}
-
 namespace DST
 {
     namespace Math
@@ -50,7 +38,7 @@ namespace DST
          *  @param n number of dimension
          *  @param x floating point cartesian coordinates
          */
-        point::point(unsigned int n, double x, ... )
+        point::point(const size_t& n, double x, ... )
         {
             
             double arg = x;
@@ -59,7 +47,7 @@ namespace DST
             va_list ap;
             va_start(ap, x);
             
-            for(unsigned int naxe = 1; naxe < n; naxe++)
+            for(size_t naxe = 1; naxe < n; naxe++)
             {
                 arg = va_arg(ap, double);
                 
@@ -73,7 +61,7 @@ namespace DST
          */
         point::point(const point& p)
         {
-            for(unsigned int i = 0; i < p.fx.size(); i++)
+            for(size_t i = 0; i < p.fx.size(); i++)
                 fx.push_back(p.fx[i]);
         }
         
@@ -90,7 +78,7 @@ namespace DST
          *  @param x   floating point cartesian coordinate.
          *  @note The number of floating point coordinate given as parameters shall equals the dimension of this point.
          */
-        void point::SetPoints( double x, ...)
+        void point::SetCoordinates(double x, ...)
         {
             double arg = x;
             if(fx.size() < 1)
@@ -101,13 +89,22 @@ namespace DST
             va_list ap;
             va_start(ap, x);
             
-            for(unsigned int naxe = 1; naxe < fx.size(); naxe++)
+            for(size_t naxe = 1; naxe < fx.size(); naxe++)
             {
                 arg = va_arg(ap, double);
                 
                 fx[naxe] = arg;
             }
             va_end(ap);
+        }
+
+        void point::SetCoordinate(const size_t& i , const double& x)
+        {
+            if( i >= fx.size())
+                throw std::out_of_range(std::string("point::SetCoordinate coordinate "+std::to_string(i)+" out of range"+std::to_string(__LINE__)).c_str());
+
+            (*(fx.begin()+i)) *= 0;
+            (*(fx.begin()+i)) += x;
         }
         
         /**
@@ -117,16 +114,12 @@ namespace DST
          *  @param p   Cartesian coordinate to assign to this.
          *  @note If the dimension of p isn't the same as this, the dimension of this is extended to the dimension of p.
          */
-        void point::SetPoints( const point& p )
+        void point::SetCoordinates( const point& p )
         {
-            for(unsigned int i = 0; i < p.fx.size(); i++)
-            {
-                if(fx.size() <= i)
-                    fx.push_back(p.fx[i]);
-                else
-                    fx[i] = p.fx[i];
-            }
-            
+            if( fx.size() != p.fx.size())
+                throw std::runtime_error(std::string("point::SetCoordinate size of p different from size of this. "+std::to_string(__LINE__)).c_str());
+
+            std::transform(fx.begin(), fx.end(), p.fx.cbegin(),fx.begin(),[](double a, double b){return a*0. + b;});
         }
         
 #pragma mark • Accessor
@@ -138,8 +131,8 @@ namespace DST
         double point::R() const
         {
             double radius = 0;
-            for(unsigned int i = 0; i < fx.size(); i++)
-                radius += fx[i]*fx[i];
+            for(std::vector<double>::const_iterator i = fx.cbegin(); i != fx.cend(); i++)
+                radius += (*i)*(*i);
             
             return sqrt(radius);
         }
@@ -151,7 +144,7 @@ namespace DST
         double point::Phi() const
         {
             if(fx.size() >= 2)
-                return (atan2(fx[1], fx[0]) > 0 ) ? atan2(fx[1], fx[0]) : 2.*acos(-1) - atan2(fx[1], fx[0]);
+                return (atan2(*(fx.cbegin()+1), *(fx.cbegin())) > 0 ) ? atan2(*(fx.cbegin()+1), *(fx.cbegin())) : 2.*Math::MathCore::Pi() - atan2(*(fx.cbegin()+1), *(fx.cbegin()));
             
             return 0;
         }
@@ -163,7 +156,7 @@ namespace DST
         double point::Theta() const
         {
             if(fx.size() >= 3)
-                return acos(fx[2]/R());
+                return acos((*(fx.cbegin()+2))/R());
             
             return 0;
         }
@@ -192,7 +185,7 @@ namespace DST
             if(fx.size() != p.fx.size())
                 return !isEqual;
             
-            for(unsigned int i = 0; i < fx.size(); i++)
+            for(size_t i = 0; i < fx.size(); i++)
                 isEqual &= ( (fx[i] == p.fx[i]) || (fabs(fx[i] - p.fx[i]) <= point::precision) );
     
             return isEqual;
@@ -209,14 +202,14 @@ namespace DST
             if(operator==(p))
                 return true;
             
-            unsigned int imax = (fx.size() <= p.fx.size()) ? fx.size() : p.fx.size();
+            size_t imax = (fx.size() <= p.fx.size()) ? fx.size() : p.fx.size();
             
-            for(unsigned int i = imax; i != 0; i--)
+            for(size_t i = imax; i != 0; i--)
             {
                 double this_radius = 0;
                 double p_radius    = 0;
                 
-                for(unsigned int k = 0; k < imax; k++)
+                for(size_t k = 0; k < imax; k++)
                 {
                     this_radius += fx[k]*fx[k];
                     p_radius    += p.fx[k]*p.fx[k];
@@ -261,14 +254,14 @@ namespace DST
             if(operator==(p))
                 return true;
             
-            unsigned int imax = (fx.size() <= p.fx.size()) ? fx.size() : p.fx.size();
+            size_t imax = (fx.size() <= p.fx.size()) ? fx.size() : p.fx.size();
             
-            for(unsigned int i = imax; i != 0; i--)
+            for(size_t i = imax; i != 0; i--)
             {
                 double this_radius = 0;
                 double p_radius    = 0;
                 
-                for(unsigned int k = 0; k < imax; k++)
+                for(size_t k = 0; k < imax; k++)
                 {
                     this_radius += fx[k]*fx[k];
                     p_radius    += p.fx[k]*p.fx[k];
@@ -319,75 +312,53 @@ namespace DST
         
         void point::operator+=(const DST::Math::point& p)
         {
-            unsigned int n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(unsigned int i = 0; i < n_elem; i++)
+            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
+            for(size_t i = 0; i < n_elem; i++)
                 fx[i]+=p.fx[i];
         }
         
         void point::operator-=(const DST::Math::point& p)
         {
-            unsigned int n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(unsigned int i = 0; i < n_elem; i++)
+            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
+            for(size_t i = 0; i < n_elem; i++)
                 fx[i]-=p.fx[i];
         }
         
         void point::operator*=(const DST::Math::point& p)
         {
-            unsigned int n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(unsigned int i = 0; i < n_elem; i++)
+            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
+            for(size_t i = 0; i < n_elem; i++)
                 fx[i]*=p.fx[i];
         }
         
         void point::operator/=(const DST::Math::point& p)
         {
-            unsigned int n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(unsigned int i = 0; i < n_elem; i++)
+            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
+            for(size_t i = 0; i < n_elem; i++)
                 fx[i]/=p.fx[i];
         }
         
         void point::operator+=(const double p)
         {
-            for(unsigned int i = 0; i < fx.size(); i++)
-                fx[i]+=p;
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)+=p;
         }
         
         void point::operator-=(const double p)
         {
-            for(unsigned int i = 0; i < fx.size(); i++)
-                fx[i]-=p;
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)-=p;
         }
         void point::operator*=(const double p)
         {
-            for(unsigned int i = 0; i < fx.size(); i++)
-                fx[i]*=p;
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)*=p;
         }
         void point::operator/=(const double p)
         {
-            for(unsigned int i = 0; i < fx.size(); i++)
-                fx[i]/=p;
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)/=p;
         }
-        
-        void point::operator+=(const int p)
-        {
-            operator+=(static_cast<double>( p ));
-        }
-        
-        void point::operator-=(const int p)
-        {
-            operator-=(static_cast<double>( p ));
-        }
-        
-        void point::operator*=(const int p)
-        {
-            operator*=(static_cast<double>( p ));
-        }
-    
-        void point::operator/=(const int p)
-        {
-            operator+=(static_cast<double>( p ));
-        }
-        
-
         
 #pragma mark • Dump
         
@@ -400,17 +371,15 @@ namespace DST
             
             sdump += std::string("(");
             
-            for(unsigned int i = 0 ; i < fx.size()-1; i++)
+            for(std::vector<double>::const_iterator i = fx.cbegin() ; i != fx.cend(); i++)
             {
-                if( DST::Math::sgn( fx[i] ) >= 0 )
+                if( DST::Math::sgn( (*i) ) >= 0 )
                     sdump += " ";
                 
-                sdump += to_string(fx[i],4)+std::string(" , ");
+                sdump += to_string((*i),4)+ (((i+1) != fx.cend())?std::string(" , "):std::string(" )"));
             }
-            if( DST::Math::sgn( fx[fx.size()-1] ) >= 0 )
-                sdump += " ";
             
-            sdump += to_string(fx[fx.size()-1],4)+std::string(") r = ")+to_string(R(),4);
+            sdump += std::string(" r = ")+to_string(R(),4);
             
             if(DST::Math::point::debug)
                 sdump += std::string("\033[0m");
@@ -899,7 +868,7 @@ DST::Math::point operator/(const double s, const DST::Math::point& p1)
 {
     DST::Math::point p_out = DST::Math::point();
     for(unsigned int n = 0; n < p1.size(); n++)
-        p_out.SetPoint(n,1./p1[n]);
+        p_out.SetCoordinate(n,1./p1[n]);
     
     p_out*=s;
     

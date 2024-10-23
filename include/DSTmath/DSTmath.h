@@ -17,6 +17,9 @@
 
 namespace DST
 {
+    std::string to_string(const double&, const int&);
+    std::string to_string(const float& , const int&);
+
     namespace Math
     {
         

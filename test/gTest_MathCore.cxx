@@ -331,6 +331,40 @@ TEST(math_core_test, test_pi)
         <<"Pi function doesn't return "<<std::acos(-1)<<" ["<<__LINE__<<"]"<<std::endl;
 }
 
+TEST(math_core_test, to_string)
+{
+    double pi = 3.141592653589793116;
+    EXPECT_FALSE(DST::to_string(pi,0) .compare("3e+00"))                     <<DST::to_string(pi,0)<<" % "<<"3e+00";
+    EXPECT_FALSE(DST::to_string(pi,1) .compare("3.1e+00"))                   <<DST::to_string(pi,1)<<" % "<<"3.1e+00";
+    EXPECT_FALSE(DST::to_string(pi,2) .compare("3.14e+00"))                  <<DST::to_string(pi,2)<<" % "<<"3.14e+00";
+    EXPECT_FALSE(DST::to_string(pi,3) .compare("3.142e+00"))                 <<DST::to_string(pi,3)<<" % "<<"3.142e+00";
+    EXPECT_FALSE(DST::to_string(pi,4) .compare("3.1416e+00"))                <<DST::to_string(pi,4)<<" % "<<"3.1416e+00";
+    EXPECT_FALSE(DST::to_string(pi,5) .compare("3.14159e+00"))               <<DST::to_string(pi,5)<<" % "<<"3.14159e+00";
+    EXPECT_FALSE(DST::to_string(pi,6) .compare("3.141593e+00"))              <<DST::to_string(pi,6)<<" % "<<"3.141593e+00";
+    EXPECT_FALSE(DST::to_string(pi,7) .compare("3.1415927e+00"))             <<DST::to_string(pi,7)<<" % "<<"3.1415927e+00";
+    EXPECT_FALSE(DST::to_string(pi,8) .compare("3.14159265e+00"))            <<DST::to_string(pi,8)<<" % "<<"3.14159265e+00";
+    EXPECT_FALSE(DST::to_string(pi,9) .compare("3.141592654e+00"))           <<DST::to_string(pi,9)<<" % "<<"3.141592654e+00";
+    EXPECT_FALSE(DST::to_string(pi,10).compare("3.1415926536e+00"))          <<DST::to_string(pi,10)<<" % "<<"3.1415926536e+00";
+    EXPECT_FALSE(DST::to_string(pi,11).compare("3.14159265359e+00"))         <<DST::to_string(pi,11)<<" % "<<"3.14159265359e+00";
+    EXPECT_FALSE(DST::to_string(pi,12).compare("3.141592653590e+00"))        <<DST::to_string(pi,12)<<" % "<<"3.141592653590e+00";
+    EXPECT_FALSE(DST::to_string(pi,13).compare("3.1415926535898e+00"))       <<DST::to_string(pi,13)<<" % "<<"3.1415926535898e+00";
+    EXPECT_FALSE(DST::to_string(pi,14).compare("3.14159265358979e+00"))      <<DST::to_string(pi,14)<<" % "<<"3.14159265358979e+00";
+    EXPECT_FALSE(DST::to_string(pi,15).compare("3.141592653589793e+00"))     <<DST::to_string(pi,15)<<" % "<<"3.141592653589793e+00";
+    EXPECT_FALSE(DST::to_string(pi,16).compare("3.1415926535897931e+00"))    <<DST::to_string(pi,16)<<" % "<<"3.1415926535897931e+00";
+    EXPECT_FALSE(DST::to_string(pi,17).compare("3.14159265358979312e+00"))   <<DST::to_string(pi,17)<<" % "<<"3.14159265358979312e+00";
+    EXPECT_FALSE(DST::to_string(pi,18).compare("3.141592653589793116e+00"))  <<DST::to_string(pi,18)<<" % "<<"3.141592653589793116e+00";
+
+    float fpi = 3.14159265;
+    EXPECT_FALSE(DST::to_string(fpi,0) .compare("3e+00"))                     <<DST::to_string(fpi,0)<<" % "<<"3e+00";
+    EXPECT_FALSE(DST::to_string(fpi,1) .compare("3.1e+00"))                   <<DST::to_string(fpi,1)<<" % "<<"3.1e+00";
+    EXPECT_FALSE(DST::to_string(fpi,2) .compare("3.14e+00"))                  <<DST::to_string(fpi,2)<<" % "<<"3.14e+00";
+    EXPECT_FALSE(DST::to_string(fpi,3) .compare("3.142e+00"))                 <<DST::to_string(fpi,3)<<" % "<<"3.142e+00";
+    EXPECT_FALSE(DST::to_string(fpi,4) .compare("3.1416e+00"))                <<DST::to_string(fpi,4)<<" % "<<"3.1416e+00";
+    EXPECT_FALSE(DST::to_string(fpi,5) .compare("3.14159e+00"))               <<DST::to_string(fpi,5)<<" % "<<"3.14159e+00";
+    EXPECT_FALSE(DST::to_string(fpi,6) .compare("3.141593e+00"))              <<DST::to_string(fpi,6)<<" % "<<"3.141593e+00";
+    EXPECT_FALSE(DST::to_string(fpi,7) .compare("3.1415927e+00"))             <<DST::to_string(fpi,7)<<" % "<<"3.1415927e+00";
+}
+
 TEST(math_core_test, gamma_function)
 {
     EXPECT_DOUBLE_EQ(Func::Gamma(1),1)
