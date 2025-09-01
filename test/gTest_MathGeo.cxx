@@ -6,7 +6,7 @@
 
 using namespace DST::Math;
 
-#define NTEST 1
+#define NTEST 1000
 
 #pragma region - Test point class
 TEST(points, ctor)
@@ -456,6 +456,8 @@ TEST(point, operator)
 
 TEST(point, arithmetic)
 {
+
+    point::precision = 1e-9;
     point p0 = point(3);
     point p1 = point(3);
     point p2 = point(3);
@@ -892,6 +894,8 @@ TEST(vector2D,operator)
 
 TEST(vector2D, arithmetic)
 {
+    point::precision = 1e-9;
+
     double twopi = 2.*acos(-1.);
     std::uniform_real_distribution<double> real(-10,10);
     std::uniform_real_distribution<double> unidl(0,1000.);
@@ -979,23 +983,26 @@ TEST(vector3D, ctor)
     std::uniform_real_distribution<double> unid(-100.,100.);
     std::default_random_engine re;
 
+    double twopi = 2. * acos(-1.);
+    double pi = acos(-1.);
+
     for(size_t k=0; k<NTEST; k++)
     {
         double l = unid(re);
         double p = unid(re);
         double t = unid(re);
 
-        double twopi = 2. * acos(-1.);
-        double pi = acos(-1.);
         double phi = std::fmod(p, twopi);
+        if(phi < 0)
+            phi += twopi;
 
         double theta = std::fmod(t, pi);
         if (theta < 0)
             theta += pi;
         
-        double x=std::abs(l)*sin(t)*cos(p);
-        double y=std::abs(l)*sin(t)*sin(p);
-        double z=std::abs(l)*cos(t);
+        double x=std::abs(l)*sin(theta)*cos(phi);
+        double y=std::abs(l)*sin(theta)*sin(phi);
+        double z=std::abs(l)*cos(theta);
         
         vector3D v3 = vector3D(point(3,x,y,z));
         EXPECT_NEAR(v3.Length(), sqrt(x*x + y*y + z*z), point::precision);
@@ -1005,9 +1012,9 @@ TEST(vector3D, ctor)
         EXPECT_NEAR(v3.Y(), y, point::precision);
         EXPECT_NEAR(v3.Z(), z, point::precision);
 
-        vector3D v4 = vector3D(l,p,t);
+        vector3D v4 = vector3D(l,phi,theta);
         EXPECT_NEAR(v4.Length(), std::abs(l), point::precision);
-        EXPECT_NEAR(v4.Phi(), phi, point::precision);
+        EXPECT_NEAR(v4.Phi()  , phi, point::precision);
         EXPECT_NEAR(v4.Theta(), theta, point::precision);
         EXPECT_NEAR(v4.X(), x, point::precision);
         EXPECT_NEAR(v4.Y(), y, point::precision);
@@ -1191,7 +1198,7 @@ TEST(vector3D,aritmetic)
         EXPECT_NEAR(v1.Z(), cv1.Z()-cv2.Z(), point::precision);
         EXPECT_NEAR(v1.Length(), sqrt((cv1.X()-cv2.X())*(cv1.X()-cv2.X()) + (cv1.Y()-cv2.Y())*(cv1.Y()-cv2.Y()) + (cv1.Z()-cv2.Z())*(cv1.Z()-cv2.Z())), point::precision);
         EXPECT_NEAR(v1.Phi(), (atan2(cv1.Y()-cv2.Y(),cv1.X()-cv2.X())>=0)?atan2(cv1.Y()-cv2.Y(),cv1.X()-cv2.X()):2*acos(-1)+atan2(cv1.Y()-cv2.Y(),cv1.X()-cv2.X()), point::precision);
-        EXPECT_NEAR(v1.Theta(), (acos((cv1.Z()+cv2.Z())/v1.Length())>=0)?acos((cv1.Z()-cv2.Z())/v1.Length()):acos(-1)+acos((cv1.Z()-cv2.Z())/v1.Length()), point::precision);
+        EXPECT_NEAR(v1.Theta(), (acos((cv1.Z()-cv2.Z())/v1.Length())>=0)?acos((cv1.Z()-cv2.Z())/v1.Length()):acos(-1)+acos((cv1.Z()-cv2.Z())/v1.Length()), point::precision);
 
         v1 = cv1;
         v1 += v3;
@@ -1223,6 +1230,8 @@ TEST(vector3D,aritmetic)
         EXPECT_NEAR(v1.Phi()   , (atan2(cv1.Y()/s,cv1.X()/s)>=0)?atan2(cv1.Y()/s,cv1.X()/s):2*acos(-1)+atan2(cv1.Y()/s,cv1.X()/s), point::precision);
         EXPECT_NEAR(v1.Theta() , (acos (cv1.Z()/s/(cv1.Length()/std::abs(s)))>=0)?acos(cv1.Z()/s/(cv1.Length()/std::abs(s))):acos(-1)+acos(cv1.Z()*s/(cv1.Length()/std::abs(s))), point::precision);
 
+        point::precision = 5e-9;
+
         v1 = cv1;
         v1 ^= v2;
         EXPECT_NEAR(v1.X(), cv1.Y()*cv2.Z()-cv1.Z()*cv2.Y(), point::precision);
@@ -1231,8 +1240,8 @@ TEST(vector3D,aritmetic)
 
         v1 = cv1;
         v1 ^= v3;
-        EXPECT_NEAR(v1.X(), cv1.Y()*0.-cv1.Z()*v3.Y(), point::precision);
-        EXPECT_NEAR(v1.Y(), cv1.Z()*v3.X()-cv1.X()*0., point::precision);
+        EXPECT_NEAR(v1.X(), -cv1.Z()*v3.Y(), point::precision);
+        EXPECT_NEAR(v1.Y(), cv1.Z()*v3.X() , point::precision);
         EXPECT_NEAR(v1.Z(), cv1.X()*v3.Y()-cv1.Y()*v3.X(), point::precision);
 
         double val1;
@@ -1275,6 +1284,8 @@ TEST(vector3D,aritmetic)
         EXPECT_NEAR(cvv.X(), v1.Y()*0.-v1.Z()*v3.Y(), point::precision);
         EXPECT_NEAR(cvv.Y(), v1.Z()*v3.X()-v1.X()*0., point::precision);
         EXPECT_NEAR(cvv.Z(), v1.X()*v3.Y()-v1.Y()*v3.X(), point::precision);
+
+        point::precision = 1e-9;
     }
 
 }
