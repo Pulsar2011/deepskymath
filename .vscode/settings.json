@@ -1,5 +1,6 @@
 {
     "files.associations": {
+        "*.py": "python",
         "__config": "cpp",
         "__bit_reference": "cpp",
         "__hash_table": "cpp",
@@ -63,6 +64,30 @@
         "utility": "cpp",
         "format": "cpp",
         "cinttypes": "cpp",
-        "chrono": "cpp"
+        "chrono": "cpp",
+        "iomanip": "cpp",
+        "map": "cpp",
+        "sstream": "cpp",
+        "any": "cpp",
+        "clocale": "cpp",
+        "codecvt": "cpp",
+        "complex": "cpp",
+        "condition_variable": "cpp",
+        "deque": "cpp",
+        "forward_list": "cpp",
+        "list": "cpp",
+        "unordered_set": "cpp",
+        "numeric": "cpp",
+        "fstream": "cpp",
+        "iostream": "cpp",
+        "istream": "cpp",
+        "semaphore": "cpp",
+        "shared_mutex": "cpp",
+        "stop_token": "cpp",
+        "thread": "cpp",
+        "cfenv": "cpp",
+        "valarray": "cpp",
+        "queue": "cpp",
+        "stack": "cpp"
     }
 }
