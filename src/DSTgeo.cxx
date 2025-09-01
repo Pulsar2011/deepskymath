@@ -30,11 +30,11 @@ namespace DST
 {
     namespace Math
     {
-#pragma mark - point class implementation
-        double point::precision = std::numeric_limits<double>::min()*1000.;
+#pragma region - point class implementation
+        double point::precision = 1e-10;
         bool   point::debug = false;
         
-#pragma mark • ctor/dtor
+#pragma region • ctor/dtor
         /**
          *  @brief Default constructor
          *  @details Create floating point coordinates
@@ -46,7 +46,7 @@ namespace DST
         
         /**
          *  @brief Default constructor
-         *  @details Create floating point coordinates with n dimension
+         *  @details Create double precision point coordinates with n dimension
          *  @param n number of dimension
          *  @param x floating point cartesian coordinates
          */
@@ -82,32 +82,78 @@ namespace DST
             fx.clear();
         }
         
-#pragma mark • Modifier
+#pragma endregion 
+#pragma region • Modifier
         /**
          *  @brief Assign coordinates
          *  @details Assign floating point cartesian coordinate to this point
          *
-         *  @param x   floating point cartesian coordinate.
-         *  @note The number of floating point coordinate given as parameters shall equals the dimension of this point.
+         *  @param args   double precision floating point cartesian coordinates.
+         *  @note The number of floating point coordinate given as parameters shall equals or be larger than the dimension of this. If not, points' coordinates exiding the dimension of this will be ignored. The behaviour is undefined if the number of coordinates given is lower than the dimension of this.
          */
-        void point::SetPoints( double x, ...)
+        void point::SetPoints(const std::initializer_list<double>& args)
         {
-            double arg = x;
-            if(fx.size() < 1)
-                fx.push_back(arg);
-            else
-                fx[0] = arg;
+            if (args.size() < fx.size())
+                throw std::invalid_argument("Not enough arguments for point::SetPoints");
             
-            va_list ap;
-            va_start(ap, x);
-            
-            for(unsigned int naxe = 1; naxe < fx.size(); naxe++)
+            auto it = args.begin();
+            for (size_t i = 0; i < fx.size(); ++i, ++it)
             {
-                arg = va_arg(ap, double);
-                
-                fx[naxe] = arg;
+                fx[i] *= 0;
+                fx[i] += (*it);
             }
-            va_end(ap);
+        }
+
+        /**
+         *  @brief Assign coordinates
+         *  @details Assign floating point cartesian coordinate to this point
+         *
+         *  @param args   double precision floating point cartesian coordinates.
+         *  @note The number of floating point coordinate given as parameters shall equals or be larger than the dimension of this. If not, points' coordinates exiding the dimension of this will be ignored. The behaviour is undefined if the number of coordinates given is lower than the dimension of this.
+         */
+        void point::SetPoints(const std::initializer_list<float>& args)
+        {
+            if (args.size() < fx.size())
+                throw std::invalid_argument("Not enough arguments for point::SetPoints");
+            
+            auto it = args.begin();
+            for (size_t i = 0; i < fx.size(); ++i, ++it)
+            {
+                fx[i] *= 0;
+                fx[i] += static_cast<double>(*it);
+            }
+        }
+
+        /**
+         *  @brief Assign coordinates
+         *  @details Assign floating point cartesian coordinate to this point
+         *
+         *  @param args   double precision floating point vector.
+         *  @note The methods is changing the coordinates point based on the smallest size between this and args.
+         */
+        void point::SetPoints(const std::vector<double>& args)
+        {
+            for (size_t i = 0; i < std::min(fx.size(),args.size()); ++i)
+            {
+                fx[i]*=0;
+                fx[i]+=args[i];
+            }
+        }
+
+        /**
+         *  @brief Assign coordinates
+         *  @details Assign floating point cartesian coordinate to this point
+         *
+         *  @param args   double precision floating point vector.
+         *  @note The methods is changing the coordinates point based on the smallest size between this and args.
+         */
+        void point::SetPoints(const std::vector<float>& args)
+        {
+            for (size_t i = 0; i < std::min(fx.size(),args.size()); ++i)
+            {
+                fx[i]*=0;
+                fx[i]+=static_cast<double>(args[i]);
+            }
         }
         
         /**
@@ -119,17 +165,16 @@ namespace DST
          */
         void point::SetPoints( const point& p )
         {
-            for(unsigned int i = 0; i < p.fx.size(); i++)
+            for(unsigned int i = 0; i < std::min(p.fx.size(),fx.size()); i++)
             {
-                if(fx.size() <= i)
-                    fx.push_back(p.fx[i]);
-                else
-                    fx[i] = p.fx[i];
+                fx[i] *= 0;
+                fx[i] += p.fx[i];
             }
             
         }
         
-#pragma mark • Accessor
+#pragma endregion 
+#pragma region • Accessor
         
         /**
          *  @brief Get distance from the origine
@@ -138,8 +183,8 @@ namespace DST
         double point::R() const
         {
             double radius = 0;
-            for(unsigned int i = 0; i < fx.size(); i++)
-                radius += fx[i]*fx[i];
+            for(std::vector<double>::const_iterator i = fx.cbegin(); i != fx.cend(); i++)
+                radius += (*i)*(*i);
             
             return sqrt(radius);
         }
@@ -151,14 +196,14 @@ namespace DST
         double point::Phi() const
         {
             if(fx.size() >= 2)
-                return (atan2(fx[1], fx[0]) > 0 ) ? atan2(fx[1], fx[0]) : 2.*acos(-1) - atan2(fx[1], fx[0]);
+                return (atan2(fx[1], fx[0]) >= 0 ) ? atan2(fx[1], fx[0]) : 2.*acos(-1) - atan2(fx[1], fx[0]);
             
             return 0;
         }
         
         /**
          *  @brief Get Elevation angle
-         *  @return \f$\sqrt{\sum_i x_i^2}\f$
+         *  @return \f$\acos(x_2/\sqrt{\sum_i x_i^2})\f$
          */
         double point::Theta() const
         {
@@ -168,7 +213,8 @@ namespace DST
             return 0;
         }
         
-#pragma mark • Operator
+#pragma endregion 
+#pragma region • Operator
         
         /**
          *  @brief Not equal comparator
@@ -183,7 +229,7 @@ namespace DST
         /**
          *  @brief Equal comparator
          *  @param p cartesian coordinate to compare to this
-         *  @return true if each floating point coordinate of p equal those of this
+         *  @return true if each floating point coordinate of p equal those of this within precision
          */
         bool point::operator==(const point& p) const
         {
@@ -193,7 +239,7 @@ namespace DST
                 return !isEqual;
             
             for(unsigned int i = 0; i < fx.size(); i++)
-                isEqual &= ( (fx[i] == p.fx[i]) || (fabs(fx[i] - p.fx[i]) <= point::precision) );
+                isEqual &= ( (fx[i] == p.fx[i]) || (std::abs(fx[i] - p.fx[i]) <= point::precision) );
     
             return isEqual;
         }
@@ -201,53 +247,25 @@ namespace DST
         /**
          *  @brief less or equal comparator
          *  @param p cartesian coordinate to compare to this
-         *  @return true if this is closer to the cartesian axis than p
-         *  @note DST::Math::point is ordered by distance to the main axis, dimension per dimension. Not by distance to the center.
+         *  @return true if this is closer to the center of the cartesian system than p
          */
         bool point::operator<=(const point& p)  const
         {
-            if(operator==(p))
-                return true;
-            
-            unsigned int imax = (fx.size() <= p.fx.size()) ? fx.size() : p.fx.size();
-            
-            for(unsigned int i = imax; i != 0; i--)
-            {
-                double this_radius = 0;
-                double p_radius    = 0;
-                
-                for(unsigned int k = 0; k < imax; k++)
-                {
-                    this_radius += fx[k]*fx[k];
-                    p_radius    += p.fx[k]*p.fx[k];
-                }
-                
-                this_radius = sqrt(this_radius);
-                p_radius    = sqrt(p_radius);
-                
-                if(fabs(this_radius - p_radius) > point::precision)
-                    return this_radius - p_radius < - point::precision;
-                
-                if(i < 1)
-                    continue;
-                
-                if( fabs(fx[i-1] - p.fx[i-1]) > point::precision)
-                    return fx[i-1] - p.fx[i-1] < - point::precision;
-            }
-            
-            
-            return fx[0] - p.fx[0]   < - point::precision;
+            return (operator<(p) || operator==(p));
         }
         
         /**
          *  @brief less comparator
          *  @param p cartesian coordinate to compare to this
-         *  @return true if this is closer to the cartesian axis than p
+         *  @return true if !(this>p) and this!=p
          *  @note DST::Math::point is ordered by distance to the main axis, dimension per dimension. Not by distance to the center.
          */
         bool point::operator< (const point& p)  const
         {
-            return operator<=(p) && !(operator==(p));
+            if(operator==(p))
+                return false;
+
+            return !(operator>(p));
         }
         
         /**
@@ -258,48 +276,44 @@ namespace DST
          */
         bool point::operator>=(const point& p)  const
         {
-            if(operator==(p))
-                return true;
-            
-            unsigned int imax = (fx.size() <= p.fx.size()) ? fx.size() : p.fx.size();
-            
-            for(unsigned int i = imax; i != 0; i--)
-            {
-                double this_radius = 0;
-                double p_radius    = 0;
-                
-                for(unsigned int k = 0; k < imax; k++)
-                {
-                    this_radius += fx[k]*fx[k];
-                    p_radius    += p.fx[k]*p.fx[k];
-                }
-                
-                this_radius = sqrt(this_radius);
-                p_radius    = sqrt(p_radius);
-                
-                if(fabs(this_radius - p_radius) > point::precision)
-                    return this_radius - p_radius > point::precision;
-                
-                if(i < 1)
-                    continue;
-                
-                if( fabs(fx[i-1] - p.fx[i-1]) > point::precision)
-                    return fx[i-1] - p.fx[i-1] < - point::precision;
-            }
-            
-            
-            return fx[0] - p.fx[0]   > - point::precision;
+            return (operator>(p) || operator==(p));
         }
         
         /**
          *  @brief greater comparator
          *  @param p cartesian coordinate to compare to this
          *  @return true if this is further away to the cartesian axis than p
-         *  @note DST::Math::point is ordered by distance to the main axis, dimension per dimension. Not by distance to the center.
+         *  @note DST::Math::point is ordered by distance to center, if the distance is equal, angle are check. If all are found to be equals, coordinates are checked. This allow to orders point in lists and allows to used point as index in std::map.
          */
         bool point::operator> (const point& p)  const
         {
-            return operator>=(p) && !(operator==(p));
+            if(operator==(p))
+                return false;
+
+            if(R() > p.R() + point::precision)
+                return true;
+            
+            if( Phi() > p.Phi() + point::precision)
+                return true;
+
+            if( Theta() > p.Theta() + point::precision)
+                return true;
+
+            if( fx.size() != p.fx.size() )
+            {
+
+                double p_test=0;
+                double  _test=0;
+                for (size_t i = std::min(fx.size(), p.fx.size()); i < std::max(fx.size(), p.fx.size()); i++)
+                {
+                     _test = (i <   fx.size()) ?   fx[i] : 0;
+                    p_test = (i < p.fx.size()) ? p.fx[i] : 0;
+
+                    if(_test - p_test > point::precision)
+                        return true;
+                }
+            }
+            return false;
         }
         
         /**
@@ -319,77 +333,78 @@ namespace DST
         
         void point::operator+=(const DST::Math::point& p)
         {
-            unsigned int n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(unsigned int i = 0; i < n_elem; i++)
+            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
+            for(size_t i = 0; i < n_elem; i++)
                 fx[i]+=p.fx[i];
         }
         
         void point::operator-=(const DST::Math::point& p)
         {
-            unsigned int n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(unsigned int i = 0; i < n_elem; i++)
+            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
+            for(size_t i = 0; i < n_elem; i++)
                 fx[i]-=p.fx[i];
         }
         
         void point::operator*=(const DST::Math::point& p)
         {
-            unsigned int n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(unsigned int i = 0; i < n_elem; i++)
+            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
+            for(size_t i = 0; i < n_elem; i++)
                 fx[i]*=p.fx[i];
         }
         
         void point::operator/=(const DST::Math::point& p)
         {
-            unsigned int n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(unsigned int i = 0; i < n_elem; i++)
+            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
+            for(size_t i = 0; i < n_elem; i++)
                 fx[i]/=p.fx[i];
         }
         
-        void point::operator+=(const double p)
+        void point::operator+=(const double& p)
         {
-            for(unsigned int i = 0; i < fx.size(); i++)
+            for(size_t i = 0; i < fx.size(); i++)
                 fx[i]+=p;
         }
         
-        void point::operator-=(const double p)
+        void point::operator-=(const double& p)
         {
-            for(unsigned int i = 0; i < fx.size(); i++)
+            for(size_t i = 0; i < fx.size(); i++)
                 fx[i]-=p;
         }
-        void point::operator*=(const double p)
+        void point::operator*=(const double& p)
         {
-            for(unsigned int i = 0; i < fx.size(); i++)
+            for(size_t i = 0; i < fx.size(); i++)
                 fx[i]*=p;
         }
-        void point::operator/=(const double p)
+        void point::operator/=(const double& p)
         {
-            for(unsigned int i = 0; i < fx.size(); i++)
+            for(size_t i = 0; i < fx.size(); i++)
                 fx[i]/=p;
         }
         
-        void point::operator+=(const int p)
+        void point::operator+=(const int& p)
         {
             operator+=(static_cast<double>( p ));
         }
         
-        void point::operator-=(const int p)
+        void point::operator-=(const int& p)
         {
             operator-=(static_cast<double>( p ));
         }
         
-        void point::operator*=(const int p)
+        void point::operator*=(const int& p)
         {
             operator*=(static_cast<double>( p ));
         }
     
-        void point::operator/=(const int p)
+        void point::operator/=(const int& p)
         {
             operator+=(static_cast<double>( p ));
         }
         
 
         
-#pragma mark • Dump
+#pragma endregion 
+#pragma region • Dump
         
         std::string point::Dump() const
         {
@@ -417,9 +432,22 @@ namespace DST
                 
             return sdump;
         }
-        
-#pragma mark - vector2D class implementation
-#pragma mark • ctor/dtor
+#pragma endregion        
+#pragma endregion
+
+#pragma region - vector2D class implementation
+
+        void vector2D::_phi()
+        {
+            double twopi = 2. * acos(-1.);
+            if(std::abs(fphi) > twopi)
+                fphi = std::fmod(fphi, twopi);
+
+            if (fphi < 0)
+                fphi += twopi;
+        }
+
+#pragma region • ctor/dtor
         
         /**
          *  @brief Default constructor
@@ -436,8 +464,10 @@ namespace DST
          *  @details Create vector with length and orientation
          *  @note The origin of the vector is at the origin
          */
-        vector2D::vector2D(double l, double p):flength(fabs(l)), fphi(p)
-        {};
+        vector2D::vector2D(double l, double p):flength(std::abs(l)),fphi(p)
+        {
+            _phi();
+        };
         
         /**
          *  @brief Constructor
@@ -445,8 +475,10 @@ namespace DST
          *  @details Create unitary vector with orientation
          *  @note The origin of the vector is at the origin
          */
-        vector2D::vector2D(double p):flength(1.), fphi(p)
-        {};
+        vector2D::vector2D(double p):flength(1.),fphi(p)
+        {
+            _phi();
+        };
         
         /**
          *  @brief Copy constructor
@@ -454,7 +486,9 @@ namespace DST
          *  @note The origin of the vector is at the origin
          */
         vector2D::vector2D(const vector2D& v): flength(v.flength), fphi(v.fphi)
-        {};
+        {
+            _phi();
+        };
         
         /**
          *  @brief Constructor
@@ -464,15 +498,31 @@ namespace DST
          */
         vector2D::vector2D(const point& p):flength(1),fphi(0)
         {
-            if(p.size() <= 1)
-            {
-                return;
-            }
+            if(p.size() < 2)
+                throw std::invalid_argument("Point must have at least 2 dimensions to construct a 2D vector");
+            
             
             flength = sqrt( p.X()*p.X() + p.Y()*p.Y() );
             fphi    = atan2(p.Y(), p.X());
+
+            _phi();
+        }
+
+        /**
+         *  @brief Constructor
+         *  @details Construc the vector between 2 points 
+         *  @param p cartesian coordinate of the vector end-point
+         *  @note The origin of the vector is at the origin
+         */
+        vector2D::vector2D(const point& p1,const point& p2):flength(1),fphi(0)
+        {
+            if(p1.size() < 2 || p2.size() < 2)
+                throw std::invalid_argument("Points must have at least 2 dimensions to construct a 2D vector");
             
-                
+            flength = sqrt( (p1.X()-p2.X())*(p1.X()-p2.X()) + (p1.Y()-p2.Y())*(p1.Y()-p2.Y()) );
+            fphi    = atan2(p2.Y()-p1.Y(), p2.X()-p1.X());
+
+            _phi();    
         }
         
         /**
@@ -480,16 +530,17 @@ namespace DST
          */
         vector2D::~vector2D(){};
         
-#pragma mark • Opperator
+#pragma endregion 
+#pragma region • Opperator
         
         bool vector2D::operator!=(const vector2D& v) const
         {
-            return fabs(flength - v.flength) > point::precision || fabs(fphi - v.fphi) > point::precision;
+            return std::abs(flength - v.flength) > point::precision || std::abs(fphi - v.fphi) > point::precision;
         }
         
         bool vector2D::operator==(const vector2D& v) const
         {
-            return fabs(flength - v.flength) < point::precision && fabs(fphi - v.fphi) < point::precision;
+            return std::abs(flength - v.flength) < point::precision && std::abs(fphi - v.fphi) < point::precision;
         }
         
         bool vector2D::operator<=(const vector2D& v) const
@@ -497,10 +548,10 @@ namespace DST
             if(operator==(v))
                 return true;
             
-            if( fabs(flength - v.flength) < point::precision )
-                return fphi - v.fphi < - point::precision;
+            if( std::abs(flength - v.flength) < point::precision )
+                return fphi - v.fphi <= - point::precision;
             
-            return flength - v.flength < - point::precision;
+            return flength - v.flength <= - point::precision;
         }
         
         bool vector2D::operator< (const vector2D& v) const
@@ -513,10 +564,10 @@ namespace DST
             if(operator==(v))
                 return true;
             
-            if( fabs(flength - v.flength) < point::precision )
-                return fphi - v.fphi > point::precision;
+            if( std::abs(flength - v.flength) < point::precision )
+                return fphi - v.fphi >= point::precision;
             
-            return (flength - v.flength) > point::precision;
+            return (flength - v.flength) >= point::precision;
         }
 
         bool vector2D::operator> (const vector2D& v) const
@@ -548,7 +599,9 @@ namespace DST
             double fx = X()+v.X();
             double fy = Y()+v.Y();
             flength = sqrt(fx*fx + fy*fy);
-            fphi    = acos(fx/flength);
+            fphi    = atan2(fy,fx);
+
+            _phi();
         }
         
         /**
@@ -559,7 +612,9 @@ namespace DST
             double fx = X() - v.X();
             double fy = Y() - v.Y();
             flength = sqrt(fx*fx + fy*fy);
-            fphi    = acos(fx/flength);
+            fphi    = atan2(fy,fx);
+
+            _phi();
         }
         
         /**
@@ -567,7 +622,10 @@ namespace DST
          */
         void vector2D::operator*=(const double s)
         {
-            flength *= s;
+            fphi     = atan2(Y()*s,X()*s);
+            flength *= std::abs(s);
+
+            _phi();
         }
         
         /**
@@ -575,10 +633,14 @@ namespace DST
          */
         void vector2D::operator/=(const double s)
         {
-            flength /= s;
+            fphi     = atan2(Y()/s,X()/s);
+            flength /= std::abs(s);
+
+            _phi();
         }
         
-#pragma mark • Dump
+#pragma endregion 
+#pragma region • Dump
         
         std::string vector2D::Dump() const
         {
@@ -603,15 +665,30 @@ namespace DST
             return sdump;
         }
         
-#pragma mark - vector3D class implementation
-#pragma mark • ctor/dtor
+#pragma endregion
+#pragma endregion
+
+#pragma region - vector3D class implementation
+
+        void vector3D::_theta()
+        {
+            double pi = acos(-1.);
+            ftheta = std::fmod(ftheta, pi);
+           
+            if(ftheta < 0)
+                ftheta += pi;
+        }
+
+#pragma region • ctor/dtor
         /**
          *  @brief Default constructor
          *  @details Create unitary vector aligned with the \f$x\f$ axis
          *  @note The origin of the vector is at the origin
          */
         vector3D::vector3D(): vector2D(), ftheta(0.)
-        {};
+        {
+            _theta();
+        }
         
         /**
          *  @brief Constructor
@@ -619,14 +696,32 @@ namespace DST
          *  @param p cartesian coordinate of the vector end-point
          *  @note The origin of the vector is at the origin
          */
-        vector3D::vector3D(const point& p)
+        vector3D::vector3D(const point& p):vector2D(p), ftheta(0)
         {
             if(p.size() < 3)
-                return;
-            
-            flength = sqrt( p.X()*p.X() + p.Y()*p.Y() );
-            fphi    = atan2(p.Y(), p.X());
-            ftheta  = acos(p.Z());
+                throw std::invalid_argument("Point must have at least 3 dimensions to construct a 3D vector");
+
+            flength = sqrt(flength*flength + p.Z()*p.Z());
+            ftheta  = acos(p.Z()/flength);
+
+            _theta();
+        }
+
+        /**
+         *  @brief Constructor
+         *  @details Construc vector by coordinate of its end-point
+         *  @param p cartesian coordinate of the vector end-point
+         *  @note The origin of the vector is at the origin
+         */
+        vector3D::vector3D(const point& p1,const point& p2):vector2D(p1,p2), ftheta(0)
+        {
+            if(p1.size() < 3 || p2.size() < 3)
+                throw std::invalid_argument("Points must have at least 3 dimensions to construct a 3D vector");
+
+            flength = sqrt(flength*flength + (p1.Z()-p2.Z())*(p1.Z()-p2.Z()));
+            ftheta  = acos((p1.Z()-p2.Z())/flength);
+
+            _theta();
         }
         
         /**
@@ -638,35 +733,38 @@ namespace DST
          *  @note The origin of the vector is at the origin
          */
         vector3D::vector3D(double l, double p, double t):vector2D(l,p), ftheta(t)
-        {};
-        
-        vector3D::vector3D(double p, double t):vector2D(p), ftheta(t)
-        {};
-        
-        vector3D::vector3D(const vector3D& v):vector2D()
         {
-            flength = v.flength;
-            fphi    = v.fphi;
-            ftheta  = v.ftheta;
+            _theta();
         }
         
-        vector3D::vector3D(const vector2D& v):vector2D(v.Length(), v.Phi())
+        vector3D::vector3D(double p, double t):vector2D(p), ftheta(t)
         {
-            ftheta  = v.Theta();
+            _theta();
+        }
+        
+        vector3D::vector3D(const vector3D& v):vector2D(v.flength,v.fphi),ftheta(v.ftheta)
+        {
+            _theta();
+        }
+        
+        vector3D::vector3D(const vector2D& v):vector2D(v.Length(), v.Phi()),ftheta(v.Theta())
+        {
+            _theta();
         }
             
         vector3D::~vector3D(){};
         
-#pragma mark • Opperator
+#pragma endregion 
+#pragma region • Opperator
         
         bool vector3D::operator!=(const vector3D& v) const
         {
-            return vector2D::operator!=( static_cast<vector2D>(v) ) || fabs(ftheta - v.ftheta) > point::precision;
+            return vector2D::operator!=( static_cast<vector2D>(v) ) || std::abs(ftheta - v.ftheta) > point::precision;
         }
         
         bool vector3D::operator==(const vector3D& v) const
         {
-            return vector2D::operator==( static_cast<vector2D>(v) ) && fabs(ftheta - v.ftheta) <= point::precision;
+            return vector2D::operator==( static_cast<vector2D>(v) ) && std::abs(ftheta - v.ftheta) <= point::precision;
         }
         
         bool vector3D::operator<=(const vector3D& v) const
@@ -674,19 +772,15 @@ namespace DST
             if(operator==(v))
                 return true;
             
-            if(fabs(flength - v.flength) > point::precision)
-                return static_cast<int>((flength - v.flength)/fabs(flength - v.flength)) <  0 ;
+            if( std::abs(flength - v.flength) < point::precision )
+            {
+                if(std::abs(fphi - v.fphi) < point::precision )
+                    return (ftheta - v.ftheta) <= - point::precision;
+                else
+                    return (fphi - v.fphi) <= - point::precision;
+            }
             
-            double this_ad = acos(sin(ftheta)  * cos(fphi));
-            double v_ad    = acos(sin(v.ftheta)* cos(v.fphi));
-            
-            if(fabs(this_ad - v_ad) > point::precision)
-                return static_cast<int>((this_ad-v_ad)/fabs(this_ad-v_ad)) < 0;
-            
-            if(fabs(fphi - v.fphi) > point::precision)
-                return static_cast<int>((fphi - v.fphi)/fabs(fphi - v.fphi)) < 0 ;
-            
-            return fabs(ftheta - v.ftheta) > point::precision && ftheta*180/acos(-1.) < v.ftheta*180/acos(-1.);
+            return (flength - v.flength) <= - point::precision;
                 
         }
         
@@ -700,20 +794,15 @@ namespace DST
             if(operator==(v))
                 return true;
             
-            if(fabs(flength - v.flength) > point::precision)
-                return flength - v.flength > point::precision;
+            if( std::abs(flength - v.flength) < point::precision )
+            {
+                if(std::abs(fphi - v.fphi) < point::precision )
+                    return (ftheta - v.ftheta) >= point::precision;
+                else
+                    return (fphi - v.fphi) >= point::precision;
+            }
             
-            double this_ad = acos(sin(ftheta)  * cos(fphi));
-            double v_ad    = acos(sin(v.ftheta)* cos(v.fphi));
-            
-            if(fabs(this_ad - v_ad) > point::precision)
-                return this_ad - v_ad > point::precision;
-            
-            if(fabs(fphi - v.fphi) > point::precision)
-                return fphi - v.fphi > point::precision;
-            
-            return ftheta - v.ftheta > point::precision;
-            
+            return (flength - v.flength) >= point::precision;
         }
         
         bool vector3D::operator> (const vector3D& v) const
@@ -749,6 +838,25 @@ namespace DST
             flength = sqrt(fx*fx + fy*fy + fz*fz);
             ftheta  = acos(fz/flength);
             fphi    = atan2(fy,fx);
+
+            _phi();
+            _theta();
+        }
+
+        /**
+         *  @brief Addition
+         */
+        void vector3D::operator+=(const vector2D& v)
+        {
+            double fx = X()+v.X();
+            double fy = Y()+v.Y();
+            double fz = Z();
+            flength = sqrt(fx*fx + fy*fy + fz*fz);
+            ftheta  = acos(fz/flength);
+            fphi    = atan2(fy,fx);
+
+            _phi();
+            _theta();
         }
         
         /**
@@ -762,10 +870,29 @@ namespace DST
             flength = sqrt(fx*fx + fy*fy + fz*fz);
             ftheta  = acos(fz/flength);
             fphi    = atan2(fy,fx);
+
+            _phi();
+            _theta();
+        }
+
+        /**
+         *  @brief Substraction
+         */
+        void vector3D::operator-=(const vector2D& v)
+        {
+            double fx = X()-v.X();
+            double fy = Y()-v.Y();
+            double fz = Z();
+            flength = sqrt(fx*fx + fy*fy + fz*fz);
+            ftheta  = acos(fz/flength);
+            fphi    = atan2(fy,fx);
+
+            _phi();
+            _theta();
         }
         
         /**
-         *  @brief Substraction
+         *  @brief cross product
          */
         void vector3D::operator^=(const vector3D& v)
         {
@@ -776,9 +903,91 @@ namespace DST
             flength = sqrt(fx*fx + fy*fy + fz*fz);
             ftheta  = acos(fz/flength);
             fphi    = atan2(fy,fx);
+
+            _phi();
+            _theta();
         }
+
+        /**
+         *  @brief cross product
+         */
+        void vector3D::operator^=(const vector2D& v)
+        {
+            double fx = - Z()*v.Y();
+            double fy =   Z()*v.X();
+            double fz = X()*v.Y() - Y()*v.X();
+            
+            flength = sqrt(fx*fx + fy*fy + fz*fz);
+            ftheta  = acos(fz/flength);
+            fphi    = atan2(fy,fx);
+
+            _phi();
+            _theta();
+        }
+
+        /**
+         *  @brief Scaling
+         */
+        void vector3D::operator*=(const double& s)
+        {
+            fphi    = atan2(Y()*s,X()*s);
+            ftheta  = acos(Z()*s/(flength*std::abs(s)));
+            flength *= std::abs(s);
+
+
+            _phi();
+            _theta();
+        }
+
+        /**
+         *  @brief Scaling
+         */
+        void vector3D::operator/=(const double& s)
+        {            
+            fphi    = atan2(Y()/s,X()/s);
+            ftheta  = acos(Z()/s/(flength/std::abs(s)));
+            flength /= std::abs(s);
+
+            _phi();
+            _theta();
+        }
+
+        /**
+         *  @brief Offset
+         */
+        void vector3D::operator+=(const double& s)
+        {
+            double fx = X()+s;
+            double fy = Y()+s;
+            double fz = Z()+s;
+            flength = sqrt(fx*fx + fy*fy + fz*fz);
+            ftheta  = acos(fz/flength);
+            fphi    = atan2(fy,fx);
+
+            _phi();
+            _theta();
+        }
+
+        /**
+         *  @brief Offset
+         */
+        void vector3D::operator-=(const double& s)
+        {
+            double fx = X()-s;
+            double fy = Y()-s;
+            double fz = Z()-s;
+            flength = sqrt(fx*fx + fy*fy + fz*fz);
+            ftheta  = acos(fz/flength);
+            fphi    = atan2(fy,fx);
+
+            _phi();
+            _theta();
+        }
+
+
         
-#pragma mark • Dump
+#pragma endregion 
+#pragma region • Dump
         
         std::string vector3D::Dump() const
         {
@@ -803,10 +1012,15 @@ namespace DST
     }
 }
 
-#pragma mark • operator
+#pragma endregion
+#pragma endregion
+#pragma region - operator
 
 DST::Math::point operator+(const DST::Math::point& p1, const DST::Math::point& p2)
 {
+    if(p1.size() != p2.size())
+        throw std::invalid_argument("Points must have the same dimension for addition");
+
     DST::Math::point p_out = DST::Math::point(p1);
     p_out+=p2;
     
@@ -815,6 +1029,9 @@ DST::Math::point operator+(const DST::Math::point& p1, const DST::Math::point& p
 
 DST::Math::point operator-(const DST::Math::point& p1, const DST::Math::point& p2)
 {
+    if(p1.size() != p2.size())
+        throw std::invalid_argument("Points must have the same dimension for substraction");
+
     DST::Math::point p_out = DST::Math::point(p1);
     p_out-=p2;
     
@@ -823,6 +1040,9 @@ DST::Math::point operator-(const DST::Math::point& p1, const DST::Math::point& p
 
 DST::Math::point operator*(const DST::Math::point& p1, const DST::Math::point& p2)
 {
+    if(p1.size() != p2.size())
+        throw std::invalid_argument("Points must have the same dimension for multiplication");
+
     DST::Math::point p_out = DST::Math::point(p1);
     p_out*=p2;
     
@@ -831,6 +1051,9 @@ DST::Math::point operator*(const DST::Math::point& p1, const DST::Math::point& p
 
 DST::Math::point operator/(const DST::Math::point& p1, const DST::Math::point& p2)
 {
+    if(p1.size() != p2.size())
+        throw std::invalid_argument("Points must have the same dimension for division");
+
     DST::Math::point p_out = DST::Math::point(p1);
     p_out/=p2;
     
@@ -935,6 +1158,13 @@ DST::Math::vector2D operator*(const DST::Math::vector2D& v1, const double s)
     return v2;
 }
 
+DST::Math::vector2D operator/(const DST::Math::vector2D& v1, const double s)
+{
+    DST::Math::vector2D v2(v1);
+    v2/=s;
+    return v2;
+}
+
 DST::Math::vector2D operator*(const double s, const DST::Math::vector2D& v1)
 {
     DST::Math::vector2D v2(v1);
@@ -946,6 +1176,13 @@ DST::Math::vector3D operator*(const DST::Math::vector3D& v1, const double s)
 {
     DST::Math::vector3D v2(v1);
     v2*=s;
+    return v2;
+}
+
+DST::Math::vector3D operator/(const DST::Math::vector3D& v1, const double s)
+{
+    DST::Math::vector3D v2(v1);
+    v2/=s;
     return v2;
 }
 
@@ -990,3 +1227,5 @@ DST::Math::vector3D operator^(const DST::Math::vector3D& v1, const DST::Math::ve
     
     return vv1;
 }
+
+#pragma endregion

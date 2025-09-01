@@ -18,10 +18,6 @@
 #include <sstream>
 #include <cstdarg>
 
-#ifdef _HAS_ROOT_
-#include<TROOT.h>
-#endif
-
 std::string to_string(const double, const int);
 std::string to_string(const float, const int);
 
@@ -56,18 +52,21 @@ namespace DST
             virtual ~point();
             
 #pragma mark • Modifier
-            void SetPoints( double, ...);
+            void SetPoints( const std::initializer_list<double>& );
+            void SetPoints( const std::vector<double>& );
+            void SetPoints( const std::initializer_list<float>& );
+            void SetPoints( const std::vector<float>& );
             void SetPoints( const point& _p );
 
 
-            inline void SetPoint(unsigned int i , double x){if( i < fx.size()) fx[i] = x; else fx.push_back(x);}
+            inline void SetPoint(const size_t& i ,const double& x){if( i < fx.size()) {fx[i]*=0; fx[i] += x;} else throw std::out_of_range("[DST::Math::points::SetPoints(const size_t&, const double&)] out of range.");}
             
             inline void SetX(double x) {SetPoint(0,x);}
             inline void SetY(double y) {SetPoint(1,y);}
             inline void SetZ(double z) {SetPoint(2,z);}
             
 #pragma mark • Operator
-            inline const double operator[](unsigned int i) const {return (i < fx.size()) ? fx[i] : std::nanf("");}
+            inline const double operator[](unsigned int i) const {return (i < fx.size()) ? fx[i] : throw std::out_of_range("[DST::Math::points[]] out of range.");}
             
             bool operator!=(const DST::Math::point&) const;
             bool operator==(const DST::Math::point&) const;
@@ -83,15 +82,15 @@ namespace DST
             void operator*=(const DST::Math::point&);
             void operator/=(const DST::Math::point&);
             
-            void operator+=(const double);
-            void operator-=(const double);
-            void operator*=(const double);
-            void operator/=(const double);
+            void operator+=(const double&);
+            void operator-=(const double&);
+            void operator*=(const double&);
+            void operator/=(const double&);
             
-            void operator+=(const int);
-            void operator-=(const int);
-            void operator*=(const int);
-            void operator/=(const int);
+            void operator+=(const int&);
+            void operator-=(const int&);
+            void operator*=(const int&);
+            void operator/=(const int&);
             
 #pragma mark • Accessor
             inline std::vector<double> GetPoint() const {return fx;}
@@ -108,10 +107,6 @@ namespace DST
 #pragma mark • Debug
             virtual std::string Dump() const;
             static bool debug;
-            
-#ifdef _HAS_ROOT_
-            ClassDef(DST::Math::point,1)
-#endif
         };
         
 #pragma mark - vector2D class definition
@@ -121,11 +116,14 @@ namespace DST
         protected:
             double flength;
             double fphi;
+
+            void _phi();
          
          public:
 #pragma mark • ctor/dtor
             vector2D();
             vector2D(const point&);
+            vector2D(const point&, const point&);
             vector2D(double, double);
             vector2D(double);
             vector2D(const vector2D&);
@@ -133,13 +131,13 @@ namespace DST
             virtual ~vector2D();
          
 #pragma mark • Modifier
-            inline void SetPhi (double _t){fphi  = _t;}
+            inline void SetPhi   (double _t){fphi    = _t; _phi();}
             inline void SetLength(double _l){flength = fabs(_l);}
          
 #pragma mark • Accessor
             inline double Phi      () const {return fphi;}
             inline double Length   () const {return flength;}
-            inline virtual double Theta() const {return acos(-1.)/2.;}
+            inline virtual double Theta() const {return acos(-1)/2.;}
             
             inline virtual double X() const {return flength*cos(fphi);}
             inline virtual double Y() const {return flength*sin(fphi);}
@@ -165,10 +163,6 @@ namespace DST
 #pragma mark • Dump
             virtual std::string Dump() const;
             
-#ifdef _HAS_ROOT_
-            ClassDef(vector2D,1)
-#endif
-            
          };
         
 #pragma mark - vector3D class definition
@@ -177,11 +171,14 @@ namespace DST
 #pragma mark • protected memeber
         protected:
             double ftheta;
+
+            void _theta();
             
         public:
 #pragma mark • ctor/dtor
             vector3D();
             vector3D(const point&);
+            vector3D(const point&,const point&);
             vector3D(double, double, double);
             vector3D(double, double);
             vector3D(const vector3D&);
@@ -214,13 +211,16 @@ namespace DST
             void operator^=(const vector3D&);
             void operator+=(const vector3D&);
             void operator-=(const vector3D&);
+            void operator^=(const vector2D&);
+            void operator+=(const vector2D&);
+            void operator-=(const vector2D&);
+            void operator+=(const double&);
+            void operator-=(const double&);
+            void operator/=(const double&);
+            void operator*=(const double&);
             
 #pragma mark • Dump
             virtual std::string Dump() const;
-            
-#ifdef _HAS_ROOT_
-            ClassDef(vector3D,1)
-#endif
         };
 
     }
@@ -251,8 +251,12 @@ double operator*(const DST::Math::vector3D& v1, const DST::Math::vector3D& v2);
 DST::Math::vector2D operator*(const DST::Math::vector2D& v1, const double s);
 DST::Math::vector2D operator*(const double s, const DST::Math::vector2D& v1);
 
+DST::Math::vector2D operator/(const DST::Math::vector2D& v1, const double s);
+
 DST::Math::vector3D operator*(const DST::Math::vector3D& v1, const double s);
 DST::Math::vector3D operator*(const double s, const DST::Math::vector3D& v1);
+
+DST::Math::vector3D operator/(const DST::Math::vector3D& v1, const double s);
 
 DST::Math::vector3D operator^(const DST::Math::vector2D& v1, const DST::Math::vector2D& v2);
 DST::Math::vector3D operator^(const DST::Math::vector3D& v1, const DST::Math::vector2D& v2);
