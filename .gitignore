@@ -80,7 +80,6 @@ cmake_install.cmake
 *Makefile*
 .deps
 *install_manifest.txt
-include
 CMakeDoxygenDefaults.cmake
 gTest_*.cmake
 CTestTestfile.cmake
