@@ -15,7 +15,6 @@
 #include <vector>
 #include <limits>
 #include <cmath>
-#include <sstream>
 #include <cstdarg>
 
 std::string to_string(const double, const int);
@@ -40,14 +39,14 @@ namespace DST
         public:
 #pragma mark • ctor/dto r
             point();
-            point(size_t n)
+            point(const size_t& n)
             {
                 fx = std::vector<double>();
                 while(fx.size() < n)
                     fx.push_back(0);
             }
             
-            point(unsigned int n, double, ...);
+            point(const size_t& n, double, ...);
             point(const point&);
             virtual ~point();
             
@@ -61,9 +60,9 @@ namespace DST
 
             inline void SetPoint(const size_t& i ,const double& x){if( i < fx.size()) {fx[i]*=0; fx[i] += x;} else throw std::out_of_range("[DST::Math::points::SetPoints(const size_t&, const double&)] out of range.");}
             
-            inline void SetX(double x) {SetPoint(0,x);}
-            inline void SetY(double y) {SetPoint(1,y);}
-            inline void SetZ(double z) {SetPoint(2,z);}
+            inline void SetX(double x)    {SetCoordinate(0,x);}
+            inline void SetY(double y)    {SetCoordinate(1,y);}
+            inline void SetZ(double z)    {SetCoordinate(2,z);}
             
 #pragma mark • Operator
             inline const double operator[](unsigned int i) const {return (i < fx.size()) ? fx[i] : throw std::out_of_range("[DST::Math::points[]] out of range.");}
@@ -93,7 +92,7 @@ namespace DST
             void operator/=(const int&);
             
 #pragma mark • Accessor
-            inline std::vector<double> GetPoint() const {return fx;}
+            inline const std::vector<double>& GetPoint() const {return fx;}
             inline size_t size() const {return fx.size();}
             inline double X() const {return operator[](0);}
             inline double Y() const {return operator[](1);}

@@ -11,7 +11,9 @@
 //
 
 #include<DSTmath/DSTmath.h>
-#include<iostream>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
 #include<stdexcept>
 
 //---
@@ -34,6 +36,19 @@
 
 namespace DST
 {
+    std::string to_string(const double& a_value, const int& n)
+    {
+        std::ostringstream sout;
+        sout << std::scientific << std::setprecision(n) << a_value;
+        return sout.str();
+    }
+
+    std::string to_string(const float& a_value, const int& n)
+    {
+        double a = static_cast<double>( a_value );
+        return DST::to_string(a, n);
+    }
+
     namespace Math
     {
     const double MathCore::kBig = 4.503599627370496e15;
