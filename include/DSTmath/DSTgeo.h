@@ -60,9 +60,9 @@ namespace DST
 
             inline void SetPoint(const size_t& i ,const double& x){if( i < fx.size()) {fx[i]*=0; fx[i] += x;} else throw std::out_of_range("[DST::Math::points::SetPoints(const size_t&, const double&)] out of range.");}
             
-            inline void SetX(double x)    {SetCoordinate(0,x);}
-            inline void SetY(double y)    {SetCoordinate(1,y);}
-            inline void SetZ(double z)    {SetCoordinate(2,z);}
+            inline void SetX(double x)    {SetPoint(0,x);}
+            inline void SetY(double y)    {SetPoint(1,y);}
+            inline void SetZ(double z)    {SetPoint(2,z);}
             
 #pragma mark • Operator
             inline const double operator[](unsigned int i) const {return (i < fx.size()) ? fx[i] : throw std::out_of_range("[DST::Math::points[]] out of range.");}

@@ -244,11 +244,11 @@ namespace DST
         {
             point p = point(fscatter[0].size());
             for(size_t i =0; i< p.size(); i++)
-                p.SetCoordinate(i,1.);
+                p.SetPoint(i,1.);
             
             for(data_iterator it = fscatter.begin(); it != fscatter.end(); it++)
             {
-                p.SetCoordinate(1, (in.eval((*it).X()) != 0)? in.eval((*it).X()):1 );
+                p.SetPoint(1, (in.eval((*it).X()) != 0)? in.eval((*it).X()):1 );
                 (*it) *= p;
             }
         }
@@ -257,11 +257,11 @@ namespace DST
         {
             point p = point(fscatter[0].size());
             for(size_t i =0; i< p.size(); i++)
-                p.SetCoordinate(i,1.);
+                p.SetPoint(i,1.);
             
             for(data_iterator it = fscatter.begin(); it != fscatter.end(); it++)
             {
-                p.SetCoordinate(1, (in.eval((*it).X()) != 0)? 1./in.eval((*it).X()):1 );
+                p.SetPoint(1, (in.eval((*it).X()) != 0)? 1./in.eval((*it).X()):1 );
                 (*it) *= p;
             }
         }
@@ -270,11 +270,11 @@ namespace DST
         {
             point p = point(fscatter[0].size());
             for(size_t i =0; i< p.size(); i++)
-                p.SetCoordinate(i,1.);
+                p.SetPoint(i,1.);
             
             for(data_iterator it = fscatter.begin(); it != fscatter.end(); it++)
             {
-                p.SetCoordinate(1,  in.eval((*it).X()) );
+                p.SetPoint(1,  in.eval((*it).X()) );
                 (*it)+= p;
             }
         }
@@ -283,11 +283,11 @@ namespace DST
         {
             point p = point(fscatter[0].size());
             for(size_t i =0; i< p.size(); i++)
-                p.SetCoordinate(i,1.);
+                p.SetPoint(i,1.);
             
             for(data_iterator it = fscatter.begin(); it != fscatter.end(); it++)
             {
-                p.SetCoordinate(1, -1*in.eval((*it).X()) );
+                p.SetPoint(1, -1*in.eval((*it).X()) );
                 (*it)+= p;
             }
         }
@@ -296,9 +296,9 @@ namespace DST
         {
             point p = point(fscatter[0].size());
             for(size_t i =0; i< p.size(); i++)
-                p.SetCoordinate(i,1.);
+                p.SetPoint(i,1.);
             
-            p.SetCoordinate(1,a);
+            p.SetPoint(1,a);
             
             for(data_iterator it = fscatter.begin(); it != fscatter.end(); it++)
                 (*it) *= p;
@@ -312,7 +312,7 @@ namespace DST
         void scatter::operator+=(double a)
         {
             point p = point(fscatter[0].size());
-            p.SetCoordinate(1,a);
+            p.SetPoint(1,a);
             
             for(data_iterator it = fscatter.begin(); it != fscatter.end(); it++)
                 (*it) += p;

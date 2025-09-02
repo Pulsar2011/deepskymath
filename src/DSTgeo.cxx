@@ -143,24 +143,6 @@ namespace DST
                 fx[i]+=static_cast<double>(args[i]);
             }
         }
-
-        void point::SetCoordinate(const size_t& i , const double& x)
-        {
-            if( i >= fx.size())
-                throw std::out_of_range(std::string("point::SetCoordinate coordinate "+std::to_string(i)+" out of range"+std::to_string(__LINE__)).c_str());
-
-            (*(fx.begin()+i)) *= 0;
-            (*(fx.begin()+i)) += x;
-        }
-
-        void point::SetCoordinate(const size_t& i , const double& x)
-        {
-            if( i >= fx.size())
-                throw std::out_of_range(std::string("point::SetCoordinate coordinate "+std::to_string(i)+" out of range"+std::to_string(__LINE__)).c_str());
-
-            (*(fx.begin()+i)) *= 0;
-            (*(fx.begin()+i)) += x;
-        }
         
         /**
          *  @brief Assign coordinates
@@ -169,18 +151,13 @@ namespace DST
          *  @param p   Cartesian coordinate to assign to this.
          *  @note If the dimension of p isn't the same as this, the dimension of this is extended to the dimension of p.
          */
-        void point::SetCoordinates( const point& p )
+        void point::SetPoints( const point& p )
         {
             if( fx.size() != p.fx.size())
-                throw std::runtime_error(std::string("point::SetCoordinate size of p different from size of this. "+std::to_string(__LINE__)).c_str());
+                throw std::runtime_error(std::string("point::SetPoints size of p different from size of this. "+std::to_string(__LINE__)).c_str());
 
             std::transform(fx.begin(), fx.end(), p.fx.cbegin(),fx.begin(),[](double a, double b){return a*0. + b;});
-            for(unsigned int i = 0; i < std::min(p.fx.size(),fx.size()); i++)
-            {
-                fx[i] *= 0;
-                fx[i] += p.fx[i];
-            }
-            
+           
         }
         
 #pragma endregion 
@@ -345,15 +322,11 @@ namespace DST
         {
             size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
             for(size_t i = 0; i < n_elem; i++)
-            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(size_t i = 0; i < n_elem; i++)
                 fx[i]+=p.fx[i];
         }
         
         void point::operator-=(const DST::Math::point& p)
         {
-            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(size_t i = 0; i < n_elem; i++)
             size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
             for(size_t i = 0; i < n_elem; i++)
                 fx[i]-=p.fx[i];
@@ -363,8 +336,6 @@ namespace DST
         {
             size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
             for(size_t i = 0; i < n_elem; i++)
-            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(size_t i = 0; i < n_elem; i++)
                 fx[i]*=p.fx[i];
         }
         
@@ -372,30 +343,22 @@ namespace DST
         {
             size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
             for(size_t i = 0; i < n_elem; i++)
-            size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
-            for(size_t i = 0; i < n_elem; i++)
                 fx[i]/=p.fx[i];
         }
         
         void point::operator+=(const double& p)
         {
-            for(size_t i = 0; i < fx.size(); i++)
-                fx[i]+=p;
             for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
                 (*i)+=p;
         }
         
         void point::operator-=(const double& p)
         {
-            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
-                (*i)-=p;
             for(size_t i = 0; i < fx.size(); i++)
                 fx[i]-=p;
         }
         void point::operator*=(const double& p)
         {
-            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
-                (*i)*=p;
             for(size_t i = 0; i < fx.size(); i++)
                 fx[i]*=p;
         }
@@ -1143,8 +1106,8 @@ DST::Math::point operator*(const double s, const DST::Math::point& p1)
 DST::Math::point operator/(const double s, const DST::Math::point& p1)
 {
     DST::Math::point p_out = DST::Math::point();
-    for(unsigned int n = 0; n < p1.size(); n++)
-        p_out.SetCoordinate(n,1./p1[n]);
+    for(size_t n = 0; n < p1.size(); n++)
+        p_out.SetPoint(n,1./p1[n]);
     
     p_out*=s;
     

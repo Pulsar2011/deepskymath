@@ -137,6 +137,9 @@ TEST(points, ctor)
 
 TEST(points, setpoints)
 {
+    point p  = point(3);
+    EXPECT_EQ(p.size(), 3);
+
     point p0 = point(3);
     EXPECT_EQ(p0.size(), 3);
 
@@ -156,6 +159,11 @@ TEST(points, setpoints)
         double z = unid(re);
         double t = unid(re);
         
+        p.SetPoints({z,y,x});
+        EXPECT_NEAR(p[0], z, point::precision);
+        EXPECT_NEAR(p[1], y, point::precision);
+        EXPECT_NEAR(p[2], x, point::precision);
+
         p0.SetPoints({x,y,z});
         EXPECT_NEAR(p0[0], x, point::precision);
         EXPECT_NEAR(p0[1], y, point::precision);
@@ -199,27 +207,13 @@ TEST(points, setpoints)
         EXPECT_NEAR(p2[4], y, point::precision);
         EXPECT_NEAR(p2[5], y, point::precision);
 
-        p2.SetPoints(p0);
-        EXPECT_EQ(p2.size(), 6);
-        EXPECT_NEAR(p2[0], p0[0], point::precision);
-        EXPECT_NEAR(p2[1], p0[1], point::precision);
-        EXPECT_NEAR(p2[2], p0[2], point::precision);
-        EXPECT_NEAR(p2[3], y, point::precision);
-        EXPECT_NEAR(p2[4], y, point::precision);
-        EXPECT_NEAR(p2[5], y, point::precision);
-
-        p0.SetPoints(p1);
+        EXPECT_ANY_THROW(p2.SetPoints(p0));
+        
+        p0.SetPoints(p);
         EXPECT_EQ(p0.size(), 3);
-        EXPECT_NEAR(p0[0], p1[0], point::precision);
-        EXPECT_NEAR(p0[1], p1[1], point::precision);
-        EXPECT_NEAR(p0[2], p1[2], point::precision);
-
-        point p4= point(3,t,z,y);
-        p0.SetPoints(p4);
-        EXPECT_EQ(p0.size(), 3);
-        EXPECT_NEAR(p0[0], t, point::precision);
-        EXPECT_NEAR(p0[1], z, point::precision);
-        EXPECT_NEAR(p0[2], y, point::precision);
+        EXPECT_NEAR(p0[0], p[0], point::precision);
+        EXPECT_NEAR(p0[1], p[1], point::precision);
+        EXPECT_NEAR(p0[2], p[2], point::precision);
 
         p1.SetPoint(0,0.);
         p1.SetPoint(1,0.);
