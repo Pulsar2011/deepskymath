@@ -39,9 +39,8 @@ namespace DST
         public:
 #pragma mark • ctor/dto r
             point();
-            point(const size_t& n)
+            point(const size_t& n):point()
             {
-                fx = std::vector<double>();
                 while(fx.size() < n)
                     fx.push_back(0);
             }
@@ -57,15 +56,14 @@ namespace DST
             void SetPoints( const std::vector<float>& );
             void SetPoints( const point& _p );
 
-
-            inline void SetPoint(const size_t& i ,const double& x){if( i < fx.size()) {fx[i]*=0; fx[i] += x;} else throw std::out_of_range("[DST::Math::points::SetPoints(const size_t&, const double&)] out of range.");}
+            inline void SetPoint(const size_t& i ,const double& x){if( i < fx.size()) {*(fx.begin()+i) *=0; *(fx.begin()+i) += x;} else throw std::out_of_range("[DST::Math::points::SetPoints(const size_t&, const double&)] out of range.");}
             
             inline void SetX(double x)    {SetPoint(0,x);}
             inline void SetY(double y)    {SetPoint(1,y);}
             inline void SetZ(double z)    {SetPoint(2,z);}
             
 #pragma mark • Operator
-            inline const double operator[](unsigned int i) const {return (i < fx.size()) ? fx[i] : throw std::out_of_range("[DST::Math::points[]] out of range.");}
+            inline const double operator[](const size_t& i) const {return (i < fx.size()) ? *(fx.cbegin()+i) : throw std::out_of_range("[DST::Math::points[]] out of range.");}
             
             bool operator!=(const DST::Math::point&) const;
             bool operator==(const DST::Math::point&) const;

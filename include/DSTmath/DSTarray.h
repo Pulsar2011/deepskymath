@@ -13,6 +13,7 @@
 #define DSM_ARRAY_H
 
 #include <valarray>
+#include <algorithm>
 
 namespace DST
 {

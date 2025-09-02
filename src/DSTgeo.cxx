@@ -14,6 +14,11 @@
 #include <DSTmath/DSTgeo.h>
 #include <DSTmath/DSTmath.h>
 
+#if __cplusplus >= 202002L  
+    // C++20 code
+    #include <ranges>
+#endif
+
 namespace DST
 {
     namespace Math
@@ -38,7 +43,7 @@ namespace DST
          *  @param n number of dimension
          *  @param x floating point cartesian coordinates
          */
-        point::point(const size_t& n, double x, ... )
+        point::point(const size_t& n, double x, ... ):point()
         {
             
             double arg = x;
@@ -59,7 +64,7 @@ namespace DST
         /**
          *  @brief Copy constructor
          */
-        point::point(const point& p)
+        point::point(const point& p):point()
         {
             for(size_t i = 0; i < p.fx.size(); i++)
                 fx.push_back(p.fx[i]);
@@ -84,12 +89,20 @@ namespace DST
             if (args.size() < fx.size())
                 throw std::invalid_argument("Not enough arguments for point::SetPoints");
             
+#if __cplusplus >= 202002L
+            for (std::tuple<double&, const double&> elem : std::views::zip(fx, args))
+            {
+                std::get<double&>(elem) *= 0;
+                std::get<double&>(elem) += std::get<1>(elem);
+            }
+#else
             auto it = args.begin();
             for (size_t i = 0; i < fx.size(); ++i, ++it)
             {
                 fx[i] *= 0;
                 fx[i] += (*it);
             }
+#endif
         }
 
         /**
@@ -104,12 +117,20 @@ namespace DST
             if (args.size() < fx.size())
                 throw std::invalid_argument("Not enough arguments for point::SetPoints");
             
+#if __cplusplus >= 202002L
+            for (std::tuple<double&, const float&> elem : std::views::zip(fx, args))
+            {
+                std::get<double&>(elem) *= 0;
+                std::get<double&>(elem) += static_cast<float>(std::get<1>(elem));
+            }
+#else
             auto it = args.begin();
             for (size_t i = 0; i < fx.size(); ++i, ++it)
             {
                 fx[i] *= 0;
                 fx[i] += static_cast<double>(*it);
             }
+#endif
         }
 
         /**
@@ -121,11 +142,19 @@ namespace DST
          */
         void point::SetPoints(const std::vector<double>& args)
         {
+#if __cplusplus >= 202002L
+            for (std::tuple<double&, const double&> elem : std::views::zip(fx, args))
+            {
+                std::get<double&>(elem) *= 0;
+                std::get<double&>(elem) += std::get<1>(elem);
+            }
+#else
             for (size_t i = 0; i < std::min(fx.size(),args.size()); ++i)
             {
                 fx[i]*=0;
                 fx[i]+=args[i];
             }
+#endif
         }
 
         /**
@@ -137,11 +166,19 @@ namespace DST
          */
         void point::SetPoints(const std::vector<float>& args)
         {
+#if __cplusplus >= 202002L
+            for (std::tuple<double&, const float&> elem : std::views::zip(fx, args))
+            {
+                std::get<double&>(elem) *= 0;
+                std::get<double&>(elem) += static_cast<double>(std::get<1>(elem));
+            }
+#else
             for (size_t i = 0; i < std::min(fx.size(),args.size()); ++i)
             {
                 fx[i]*=0;
                 fx[i]+=static_cast<double>(args[i]);
             }
+#endif
         }
         
         /**
@@ -194,10 +231,7 @@ namespace DST
          */
         double point::Theta() const
         {
-            if(fx.size() >= 3)
-                return acos((*(fx.cbegin()+2))/R());
-            
-            return 0;
+            return (fx.size() >= 3)?acos((*(fx.cbegin()+2))/R()):0.;
         }
         
 #pragma endregion 
@@ -225,8 +259,13 @@ namespace DST
             if(fx.size() != p.fx.size())
                 return !isEqual;
             
+#if __cplusplus >= 202002L
+            for (std::tuple<const double&, const double&> elem : std::views::zip(fx, p.fx))
+                isEqual &= ( (std::get<0>(elem) == std::get<1>(elem)) || (std::abs(std::get<0>(elem) - std::get<1>(elem)) <= point::precision) );
+#else
             for(size_t i = 0; i < fx.size(); i++)
                 isEqual &= ( (fx[i] == p.fx[i]) || (std::abs(fx[i] - p.fx[i]) <= point::precision) );
+#endif
     
             return isEqual;
         }
@@ -320,30 +359,50 @@ namespace DST
         
         void point::operator+=(const DST::Math::point& p)
         {
+#if __cplusplus >= 202002L
+            for (std::tuple<double&, const double&> elem : std::views::zip(fx, p.fx))
+                std::get<double&>(elem) += std::get<1>(elem);
+#else
             size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
             for(size_t i = 0; i < n_elem; i++)
                 fx[i]+=p.fx[i];
+#endif
         }
         
         void point::operator-=(const DST::Math::point& p)
         {
+#if __cplusplus >= 202002L
+            for (std::tuple<double&, const double&> elem : std::views::zip(fx, p.fx))
+                std::get<double&>(elem) -= std::get<1>(elem);
+#else
             size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
             for(size_t i = 0; i < n_elem; i++)
                 fx[i]-=p.fx[i];
+#endif
         }
         
         void point::operator*=(const DST::Math::point& p)
         {
+#if __cplusplus >= 202002L
+            for (std::tuple<double&, const double&> elem : std::views::zip(fx, p.fx))
+                std::get<double&>(elem) *= std::get<1>(elem);
+#else
             size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
             for(size_t i = 0; i < n_elem; i++)
                 fx[i]*=p.fx[i];
+#endif
         }
         
         void point::operator/=(const DST::Math::point& p)
         {
+#if __cplusplus >= 202002L
+            for (std::tuple<double&, const double&> elem : std::views::zip(fx, p.fx))
+                std::get<double&>(elem) /= std::get<1>(elem);
+#else
             size_t n_elem = (fx.size() <= p.fx.size())? fx.size(): p.fx.size();
             for(size_t i = 0; i < n_elem; i++)
                 fx[i]/=p.fx[i];
+#endif
         }
         
         void point::operator+=(const double& p)
@@ -354,18 +413,18 @@ namespace DST
         
         void point::operator-=(const double& p)
         {
-            for(size_t i = 0; i < fx.size(); i++)
-                fx[i]-=p;
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)-=p;
         }
         void point::operator*=(const double& p)
         {
-            for(size_t i = 0; i < fx.size(); i++)
-                fx[i]*=p;
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)*=p;
         }
         void point::operator/=(const double& p)
         {
-            for(size_t i = 0; i < fx.size(); i++)
-                fx[i]/=p;
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)/=p;
         }
         
         void point::operator+=(const int& p)
