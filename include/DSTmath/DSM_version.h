@@ -3,6 +3,8 @@
 
 #include <string>
 #include <vector>
+#include <stdexcept>
+#include <string>
 
 namespace DSM
 {

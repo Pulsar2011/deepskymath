@@ -1,20 +1,17 @@
 // -*- mode: c++; -*- 
-/* vector_utils.h
- * Author(s):     Arnaud Chapon <chapon@cppm.in2p3.fr>
- * Creation date: 2012-02-09
- * Last modified: 2013-04-04
- * 
- * License: 
- * 
- * Description: 
- * 
- * History: 
- * 
- */
+//
+//  File created by GILLARD William
+//  Centre de Physic des Particules de Marseille
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #include <sstream>
 #include <iostream>
 #include <vector>
+#include <stdexcept>
+#include <string>
 
 #ifndef __utilities__vector_utils_h
 #define __utilities__vector_utils_h 1

@@ -2,18 +2,20 @@
 //  DSTmath.h
 //  DeepSkyTools
 //
-//  File created by GILLARD William on 23/10/15.
-//  Mathematical method rewitten based on the ROOT::framwork to be ROOT independent compilent
-//
+//  File created by GILLARD William
 //  Centre de Physic des Particules de Marseille
-//	Copyright (c) 2015, All rights reserved
-//
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #ifndef __DST_MATH_CORE__
 #define __DST_MATH_CORE__
 #include<cmath>
 #include<limits>
 #include<vector>
+#include <stdexcept>
+#include <string>
 
 namespace DST
 {

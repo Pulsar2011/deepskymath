@@ -6,8 +6,10 @@
 //  Plotting tools
 //
 //  Centre de Physic des Particules de Marseille
-//	Copyright (c) 2015, All rights reserved
-//
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #include <DSTmath/DSTplot.h>
 #include <algorithm> 
@@ -27,7 +29,7 @@ namespace DST
         }
         
 #pragma mark - scatter plot class definition
-#pragma mark • ctor/dtor
+#pragma mark -- ctor/dtor
         /**
          *  @brief default constructor
          */
@@ -97,11 +99,11 @@ namespace DST
             for(size_t i = 0; i < fscatter.size(); i++)
                 y.push_back(fscatter[i].Y());
                 
-                return y;
+            return y;
         }
         
         
-#pragma mark • modifier
+#pragma mark -- modifier
 #pragma mark 1) Insertion
         
         /**
@@ -177,7 +179,7 @@ namespace DST
             std::sort(fscatter.begin(), fscatter.end(),point_sort);
         }
         
-#pragma mark • acessor
+#pragma mark -- acessor
         
         /**
          *  @details Get the maximum value of the scatter point within range
@@ -239,7 +241,7 @@ namespace DST
             return mean;
         }
         
-#pragma mark • operator
+#pragma mark -- operator
         void scatter::operator*=(const scatter& in)
         {
             point p = point(fscatter[0].size());
@@ -323,7 +325,7 @@ namespace DST
             operator+=(-a);
         }
         
-#pragma mark • Mathematic estimator
+#pragma mark -- Mathematic estimator
         double scatter::eval(double x) const
         {
             data tmp = std::vector<point>(fscatter);

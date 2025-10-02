@@ -1,6 +1,12 @@
 // -*- mode: c++; -*- 
-/* vector_utils.cc
- */
+//  DeepSkyTools
+//
+//  File created by GILLARD William
+//  Centre de Physic des Particules de Marseille
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #include <cmath>
 #include <stdexcept>
@@ -203,8 +209,8 @@ namespace DST
     for ( size_t i = 0; i < v_.size(); i++ )
       s.push_back ( v_.at(i) * w_.at(i) );
       
-      double cov = mean ( s ) - ( mean ( v_ ) * mean ( w_ ) );
-      s.clear();
+    double cov = mean ( s ) - ( mean ( v_ ) * mean ( w_ ) );
+    s.clear();
     return cov;
   }
 

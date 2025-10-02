@@ -2,12 +2,12 @@
 //  DSTplot.h
 //  DeepSkyTools
 //
-//  File created by GILLARD William on 27/05/16.
-//  Plotting Tools
-//
+//  File created by GILLARD William
 //  Centre de Physic des Particules de Marseille
-//	Copyright (c) 2015, All rights reserved
-//
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #ifndef __DST_MATH_PLOT__
 #define __DST_MATH_PLOT__
@@ -36,13 +36,13 @@ namespace DST
         {
             
         private:
-#pragma mark • private member
+#pragma mark -- private member
             data fscatter;
             std::string fname;
             std::string ftitle;
 
         public:
-#pragma mark • ctor/dtor
+#pragma mark -- ctor/dtor
             scatter();
             scatter(const data&);
             scatter(size_t, point, ...);
@@ -53,7 +53,7 @@ namespace DST
             
             scatter operator=(const scatter&);
             
-#pragma mark • modifier
+#pragma mark -- modifier
 
 #pragma mark 1) Insertion
             void insert(const scatter&);
@@ -72,7 +72,7 @@ namespace DST
             virtual void sort();
             
             
-#pragma mark • acessor
+#pragma mark -- acessor
             
             inline point operator[](size_t i){return fscatter[i];}
             
@@ -90,7 +90,7 @@ namespace DST
             std::vector<double> getY() const;
             
             
-#pragma mark • operator
+#pragma mark -- operator
             virtual void operator*=(const scatter&);
             virtual void operator/=(const scatter&);
             virtual void operator+=(const scatter&);
@@ -101,7 +101,7 @@ namespace DST
             virtual void operator+=(double);
             virtual void operator-=(double);
 
-#pragma mark • Mathematic estimator
+#pragma mark -- Mathematic estimator
             virtual double eval(double) const;
             
         };

@@ -2,18 +2,20 @@
 //  DSTarray.h
 //  DeepSkyTools
 //
-//  File created by GILLARD William on 11/01/25.
-//  Core class to handle array.
-//
+//  File created by GILLARD William
 //  Centre de Physic des Particules de Marseille
-//	Copyright (c) 2025, All rights reserved
-//
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #ifndef DSM_ARRAY_H
 #define DSM_ARRAY_H
 
 #include <valarray>
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 
 namespace DST
 {
@@ -28,13 +30,13 @@ namespace DST
         template <class T>
         class MaskedArray
         {
-#pragma region • private members
+#pragma region -- private members
         protected:
             std::valarray<T> fData;
             std::valarray<bool> fMask;
 
 #pragma endregion
-#pragma region • public members functions
+#pragma region -- public members functions
         public:
 #pragma region ctor/dtor
             /**

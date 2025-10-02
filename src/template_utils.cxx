@@ -1,11 +1,13 @@
 //
 //  template_utils.cc
-//  
+//  DeepSkyTools
 //
-//  Created by GILLARD William on 03/02/15.
-//  __MyCompanyName__
-//	Copyright (c) 2015, All rights reserved
-//
+//  File created by GILLARD William
+//  Centre de Physic des Particules de Marseille
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #include <iostream>
 #include <limits>
@@ -108,7 +110,7 @@ namespace DST
 #pragma mark -
 #pragma mark - statistic::binned_pdf implementation
 	
-#pragma mark • constructor/destructor
+#pragma mark -- constructor/destructor
  
 	/**
 	 *  @brief Default constructor
@@ -219,7 +221,7 @@ namespace DST
 		init();
 	}
 	
-#pragma mark • Initialization
+#pragma mark -- Initialization
 	/**
 	 * @details Initialize the random generator state to default value. The random seed is generated based on the clock time.
 	 */
@@ -303,7 +305,7 @@ namespace DST
 		return max;
 	}
 	
-#pragma mark • random generator
+#pragma mark -- random generator
 	/**
 	 *  @brief Generate random number based on the PDF.
 	 *  @details Markov-Chain Monte-Carlo slice sampling algorithm is used to sample the pdf and randomly generate a number according to the probability. Futhermore, in order to allow rare event to occurs, an important sampling is combined to the slice sampling algortim to artificially increase probability of the tails of the distribution.
@@ -383,7 +385,7 @@ namespace DST
 		return gen();
 	}
 
-#pragma mark • PDF Evaluation
+#pragma mark -- PDF Evaluation
 	/**
 	 *  @details Estimate the probability of \f$x\f$ to be selected. If \f$x\f$ is outside the PDF boundary, their isn't any interpolation done and the returned probability will be 0.
 	 *  @param x: a value to test.
@@ -627,8 +629,8 @@ namespace DST
         return iBin;
     }
 
-#pragma mark • Operator
-#pragma mark – Self-modifier opperator
+#pragma mark -- Operator
+#pragma mark - Self-modifier opperator
 
 	/**
 	 *  @brief Mathematical operator
@@ -752,7 +754,7 @@ namespace DST
 		isNormalized = false;
 	}
 	
-#pragma mark – modifier operator
+#pragma mark - modifier operator
 	/**
 	 *  @brief Mathematical operator
 	 *  @details Sum up probability between two pdf.
@@ -874,7 +876,7 @@ namespace DST
         
     }
 	
-#pragma mark – assignement operator
+#pragma mark - assignement operator
 	/**
 	 *  @brief Assignement operator
 	 *  @details Copy this to a new statistic::binned_pdf PDF distribution. The random generator seed ins,t copyed during the copy to insure independance between the two random number generators
@@ -898,7 +900,7 @@ namespace DST
 		return *this;
 	}
 	
-#pragma mark • Predifined PDF
+#pragma mark -- Predifined PDF
 	/**
 	 *  @details Generate a binned gaussian distribution
 	 *
@@ -963,7 +965,7 @@ namespace DST
         
 #pragma mark - statistic::binned_pdf2 implementation
         
-#pragma mark • constructor/destructor
+#pragma mark -- constructor/destructor
         
         /**
          *  @brief Default constructor
@@ -1127,7 +1129,7 @@ namespace DST
             init();
         }
         
-#pragma mark • Initialization
+#pragma mark -- Initialization
         /**
          * @details Initialize the random generator state to default value. The random seed is generated based on the clock time.
          */
@@ -1271,7 +1273,7 @@ namespace DST
             return max;
         }
         
-#pragma mark • random generator
+#pragma mark -- random generator
         /**
          *  @brief Generate random number based on the PDF.
          *  @details Markov-Chain Monte-Carlo slice sampling algorithm is used to sample the pdf and randomly generate a number according to the probability. Futhermore, in order to allow rare event to occurs, an important sampling is combined to the slice sampling algortim to artificially increase probability of the tails of the distribution.
@@ -1366,7 +1368,7 @@ namespace DST
             return gen();
         }
         
-#pragma mark • PDF Evaluation
+#pragma mark -- PDF Evaluation
         
         double binned_pdf2::x_width(int i) const
         {
@@ -1720,8 +1722,8 @@ namespace DST
             return RMS;
         }
         
-#pragma mark • Operator
-#pragma mark – Self-modifier opperator
+#pragma mark -- Operator
+#pragma mark - Self-modifier opperator
         
         /**
          *  @brief Mathematical operator
@@ -1877,7 +1879,7 @@ namespace DST
             isNormalized = false;
         }
         
-#pragma mark – modifier operator
+#pragma mark - modifier operator
         /**
          *  @brief Mathematical operator
          *  @details Sum up probability between two pdf.
@@ -1986,7 +1988,7 @@ namespace DST
             normalize_pdf();
         }
         
-#pragma mark – assignement operator
+#pragma mark - assignement operator
         /**
          *  @brief Assignement operator
          *  @details Copy this to a new statistic::binned_pdf PDF distribution. The random generator seed ins,t copyed during the copy to insure independance between the two random number generators
@@ -2014,7 +2016,7 @@ namespace DST
             return *this;
         }
         
-#pragma mark • Predifined PDF
+#pragma mark -- Predifined PDF
         binned_pdf2 binned_pdf2::gaus(double mux, double muy, double sigmax, double sigmay, unsigned int nbin)
         {
             double *mu = new double[2]; mu[0]=mux; mu[1]=muy;
@@ -2149,7 +2151,7 @@ namespace DST
         }
 	
 #pragma mark - statistic::important_sampling implementation
-#pragma mark • Contructor/Destriuctor
+#pragma mark -- Contructor/Destriuctor
 	
 	/**
 	 *  @details Default constructor with an empty PDF distribution.
@@ -2194,7 +2196,7 @@ namespace DST
 		biased_pdf = NULL;
 	}
 	
-#pragma mark • Randomness
+#pragma mark -- Randomness
 	/**
 	 *  @details Set the random seed
 	 *  @param seed Random seed
@@ -2223,7 +2225,7 @@ namespace DST
 		return seed;
 	}
 	
-#pragma mark • PDF configuration
+#pragma mark -- PDF configuration
 	/**
 	 *  Modify PDF stored by in the pimath::ramdom_sampling memory with an other PDF.
 	 *  @param P statistic::binned_pdf to be used to generate random number
@@ -2257,7 +2259,7 @@ namespace DST
 		biased_pdf->scale(fscale);
 	}
 	
-#pragma mark • Random generator
+#pragma mark -- Random generator
 	/**
 	 *  @details Generates random number from a biased PDF and calculate the true prtobability of the generated event.
 	 *
@@ -2313,7 +2315,7 @@ namespace DST
 		fpdf.push_back(pdf_distribution(p,ptr));
 	}
 	
-#pragma mark – PDF estimator
+#pragma mark - PDF estimator
         
 	double pdf::operator()(double x)
 	{
@@ -2331,7 +2333,7 @@ namespace DST
 		return w*pdf_norme;
 	}
 	
-#pragma mark – pdf
+#pragma mark - pdf
 	void pdf::setRange(double min, double max)
 	{
 		if(min == max)
@@ -2345,7 +2347,7 @@ namespace DST
 		
 	}
 	
-#pragma mark – Random kernel
+#pragma mark - Random kernel
 	
     double pdf::gen(void)
     {
