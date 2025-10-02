@@ -1,0 +1,45 @@
+# You can override the included template(s) by including variable overrides
+# SAST customization: https://docs.gitlab.com/ee/user/application_security/sast/#customizing-the-sast-settings
+# Secret Detection customization: https://docs.gitlab.com/ee/user/application_security/secret_detection/#customizing-settings
+# Note that environment variables can be set in several places
+# See https://docs.gitlab.com/ee/ci/variables/#priority-of-environment-variables
+image:
+  name: gcc:13-bookworm
+
+stages:
+- .pre
+- build
+- test
+
+variables:
+  GIT_SUBMODULE_STRATEGY: normal
+  DEBIAN_FRONTEND: noninteractive
+
+before_script:
+  - apt-get update
+  - apt-get install -y cmake make
+  - apt-get install -y libgsl-dev
+  - apt-get install -y libboost-filesystem-dev libboost-chrono-dev libboost-thread-dev libboost-regex-dev
+
+deps:
+  stage: .pre
+  script:
+    - echo "No-op dependencies are installed per job"
+
+build:
+  stage: build
+  script:
+  - mkdir -p build
+  - cd build
+  - cmake -Wno-dev ..
+  - make -j "$(nproc --all)"
+  artifacts:
+    expire_in: 2 hrs
+    paths:
+    - build
+
+test:
+  stage: test
+  script:
+  - cd build
+  - ctest --output-on-failure

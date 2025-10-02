@@ -2,12 +2,12 @@
 //  DSTpoint.h
 //  DeepSkyTools
 //
-//  File created by GILLARD William on 04/11/15.
-//  Definition of cartesian coordinates
-//
+//  File created by GILLARD William
 //  Centre de Physic des Particules de Marseille
-//	Copyright (c) 2015, All rights reserved
-//
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #ifndef __DST_MATH_POINT__
 #define __DST_MATH_POINT__
@@ -16,6 +16,8 @@
 #include <limits>
 #include <cmath>
 #include <cstdarg>
+#include <stdexcept>
+#include <string>
 
 std::string to_string(const double, const int);
 std::string to_string(const float, const int);
@@ -32,12 +34,12 @@ namespace DST
          */
         class point
         {
-#pragma mark • protected memeber
+#pragma mark -- protected memeber
         protected:
             std::vector<double>fx;
             
         public:
-#pragma mark • ctor/dto r
+#pragma mark -- ctor/dto r
             point();
             point(const size_t& n):point()
             {
@@ -49,7 +51,7 @@ namespace DST
             point(const point&);
             virtual ~point();
             
-#pragma mark • Modifier
+#pragma mark -- Modifier
             void SetPoints( const std::initializer_list<double>& );
             void SetPoints( const std::vector<double>& );
             void SetPoints( const std::initializer_list<float>& );
@@ -62,7 +64,7 @@ namespace DST
             inline void SetY(double y)    {SetPoint(1,y);}
             inline void SetZ(double z)    {SetPoint(2,z);}
             
-#pragma mark • Operator
+#pragma mark -- Operator
             inline const double operator[](const size_t& i) const {return (i < fx.size()) ? *(fx.cbegin()+i) : throw std::out_of_range("[DST::Math::points[]] out of range.");}
             
             bool operator!=(const DST::Math::point&) const;
@@ -89,7 +91,7 @@ namespace DST
             void operator*=(const int&);
             void operator/=(const int&);
             
-#pragma mark • Accessor
+#pragma mark -- Accessor
             inline const std::vector<double>& GetPoint() const {return fx;}
             inline size_t size() const {return fx.size();}
             inline double X() const {return operator[](0);}
@@ -101,7 +103,7 @@ namespace DST
             
             static double precision;
             
-#pragma mark • Debug
+#pragma mark -- Debug
             virtual std::string Dump() const;
             static bool debug;
         };
@@ -109,7 +111,7 @@ namespace DST
 #pragma mark - vector2D class definition
         class vector2D
         {
-#pragma mark • protected memeber
+#pragma mark -- protected memeber
         protected:
             double flength;
             double fphi;
@@ -117,7 +119,7 @@ namespace DST
             void _phi();
          
          public:
-#pragma mark • ctor/dtor
+#pragma mark -- ctor/dtor
             vector2D();
             vector2D(const point&);
             vector2D(const point&, const point&);
@@ -127,11 +129,11 @@ namespace DST
          
             virtual ~vector2D();
          
-#pragma mark • Modifier
+#pragma mark -- Modifier
             inline void SetPhi   (double _t){fphi    = _t; _phi();}
             inline void SetLength(double _l){flength = fabs(_l);}
          
-#pragma mark • Accessor
+#pragma mark -- Accessor
             inline double Phi      () const {return fphi;}
             inline double Length   () const {return flength;}
             inline virtual double Theta() const {return acos(-1)/2.;}
@@ -142,7 +144,7 @@ namespace DST
             
             virtual DST::Math::point EndPoint() const {return point(2, X(), Y());}
          
-#pragma mark • Opperator
+#pragma mark -- Opperator
             virtual bool operator!=(const vector2D&) const;
             virtual bool operator==(const vector2D&) const;
             virtual bool operator<=(const vector2D&) const;
@@ -157,7 +159,7 @@ namespace DST
             void operator*=(const double);
             void operator/=(const double);
             
-#pragma mark • Dump
+#pragma mark -- Dump
             virtual std::string Dump() const;
             
          };
@@ -165,14 +167,14 @@ namespace DST
 #pragma mark - vector3D class definition
         class vector3D: public vector2D
         {
-#pragma mark • protected memeber
+#pragma mark -- protected memeber
         protected:
             double ftheta;
 
             void _theta();
             
         public:
-#pragma mark • ctor/dtor
+#pragma mark -- ctor/dtor
             vector3D();
             vector3D(const point&);
             vector3D(const point&,const point&);
@@ -183,10 +185,10 @@ namespace DST
             
             virtual ~vector3D();
             
-#pragma mark • Modifier
+#pragma mark -- Modifier
             inline void SetTheta  (double _p){ftheta   = _p;}
             
-#pragma mark • Accessor
+#pragma mark -- Accessor
             inline double Theta() const {return ftheta;}
             
             inline virtual double X() const {return flength*sin(ftheta)*cos(fphi);}
@@ -195,7 +197,7 @@ namespace DST
             
             virtual DST::Math::point EndPoint() const {return point(3, X(), Y(), Z());}
             
-#pragma mark • Opperator
+#pragma mark -- Opperator
             bool operator!=(const vector3D&) const;
             bool operator==(const vector3D&) const;
             bool operator<=(const vector3D&) const;
@@ -216,7 +218,7 @@ namespace DST
             void operator/=(const double&);
             void operator*=(const double&);
             
-#pragma mark • Dump
+#pragma mark -- Dump
             virtual std::string Dump() const;
         };
 

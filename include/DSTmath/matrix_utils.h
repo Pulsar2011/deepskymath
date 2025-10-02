@@ -1,18 +1,15 @@
 // -*- mode: c++; -*- 
-/* matrix_utils.h
- * Author(s):     Arnaud Chapon <chapon@cppm.in2p3.fr>
- * Creation date: 2012-02-10
- * Last modified: 2012-08-03
- * 
- * License: 
- * 
- * Description: 
- * 
- * History: 
- * 
- */
+//
+//  File created by GILLARD William
+//  Centre de Physic des Particules de Marseille
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #include <vector>
+#include <stdexcept>
+#include <string>
 
 #include "vector_utils.h"
 

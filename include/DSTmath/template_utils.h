@@ -1,12 +1,12 @@
 //
 //  pixtemplate.h
-//  
 //
-//  Created by GILLARD William on 03/02/15.
-//
-//  CPPM/AMU/CNRS-IN2P3
-//	Copyright (c) 2015, All rights reserved
-//
+//  File created by GILLARD William
+//  Centre de Physic des Particules de Marseille
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #ifndef __DST_MATH_template__
 #define __DST_MATH_template__
@@ -18,6 +18,8 @@
 #include <algorithm>
 #include <iostream>
 #include <chrono>
+#include <stdexcept>
+#include <string>
 
 #if __cplusplus >= 199711L
 #include <random>
@@ -114,8 +116,8 @@ namespace DST
 	class binned_pdf
 	{
 	private:
-#pragma mark • private member
-#pragma mark – variable
+#pragma mark -- private member
+#pragma mark - variable
 		value  fval;
 		weight fpdf;
 		
@@ -126,7 +128,7 @@ namespace DST
 		
 		bool isNormalized;
 		
-#pragma mark – random generator
+#pragma mark - random generator
 		int64_t seed;
         
 #if __cplusplus >= 201103L
@@ -134,7 +136,7 @@ namespace DST
 #endif
 
 
-#pragma mark – methods
+#pragma mark - methods
 		void setup();				///< Optimize the probability distribution function for the random generator.
 		void init();				///< Initialize random generator state.
 		double normalize_pdf();
@@ -144,8 +146,8 @@ namespace DST
 		virtual void Usetup(){};
 
 	public:
-#pragma mark • public member
-#pragma mark  – random generator
+#pragma mark -- public member
+#pragma mark  - random generator
 		double gen();										///< Use of the MCMC slice sampling methods to generate a random number according to the PDF.
 		double operator()(void);
         
@@ -173,7 +175,7 @@ namespace DST
 		 */
 		int64_t getSeed(){return seed;}
 
-#pragma mark – constructor/destructor
+#pragma mark - constructor/destructor
 		binned_pdf();
 		binned_pdf(farray, farray);
 		binned_pdf(value , weight);
@@ -181,7 +183,7 @@ namespace DST
 		
 		virtual ~binned_pdf();
 
-#pragma mark – operator
+#pragma mark - operator
 
 		void operator+=(const binned_pdf&   );
 		void operator*=(const double   );
@@ -193,17 +195,17 @@ namespace DST
 		
 		binned_pdf& operator=(const binned_pdf& );
 
-#pragma mark – PDF accessor
+#pragma mark - PDF accessor
         
         inline size_t size() const {return fval.size();}
         
-#pragma mark – PDF modifier
+#pragma mark - PDF modifier
 		
 		void scale(double);
 		void shift(double);
         void fill(double, double w = 1.0);
 		
-#pragma mark – PDF Evaluation
+#pragma mark - PDF Evaluation
 		double eval(float ) const;	//!<  Estimatition of the probability.
 		double eval(int   ) const;	//!<  Estimatition of the probability.
 		double eval(double) const;	//!<  Estimatition of the probability.
@@ -219,13 +221,13 @@ namespace DST
         inline double valueAt(int i) const {return (fval.find(i)!=fval.end())?fval.find(i)->second:0;}
         inline double probabilityAt(int i) const {return (fpdf.find(i)!=fpdf.end())?fpdf.find(i)->second:0;}
 		
-#pragma mark – Debug tools
+#pragma mark - Debug tools
 		double LowEdge(){return lowEdge;}
 		double UpEdge (){return upEdge ;}
 		
 		void dump() const;
 
-#pragma mark – Predifined PDF
+#pragma mark - Predifined PDF
 		static binned_pdf& gaus(double, double, unsigned int nbin = 5000);
 		static binned_pdf& logNormal(double, double, unsigned int nbin = 5000);
 	};
@@ -239,8 +241,8 @@ namespace DST
         class binned_pdf2
         {
         protected:
-#pragma mark • private member
-#pragma mark – variable
+#pragma mark -- private member
+#pragma mark - variable
             lvalue  fxval;
             lvalue  fyval;
             lweight fpdf;
@@ -261,7 +263,7 @@ namespace DST
             
             std::vector<double> rand_gen;
             
-#pragma mark – random generator
+#pragma mark - random generator
             int64_t seed;
             
 #if __cplusplus >= 201103L
@@ -269,7 +271,7 @@ namespace DST
 #endif
             
             
-#pragma mark – methods
+#pragma mark - methods
             void setup();				///< Optimize the probability distribution function for the random generator.
             void init();				///< Initialize random generator state.
             
@@ -278,8 +280,8 @@ namespace DST
             virtual void Usetup(){};
             
         public:
-#pragma mark • public member
-#pragma mark  – random generator
+#pragma mark -- public member
+#pragma mark  - random generator
             inline double normalize(){return normalize_pdf();}
             
             std::vector<double> gen();               ///< Use of the MCMC slice sampling methods to generate a random number according to the PDF.
@@ -307,7 +309,7 @@ namespace DST
              */
             int64_t getSeed(){return seed;}
             
-#pragma mark – constructor/destructor
+#pragma mark - constructor/destructor
             binned_pdf2();
             binned_pdf2(farray,farray, farray);
             binned_pdf2(lvalue ,lvalue , lweight);
@@ -315,7 +317,7 @@ namespace DST
             
             virtual ~binned_pdf2();
             
-#pragma mark – operator
+#pragma mark - operator
             
             void operator+=(const binned_pdf2&   );
             void operator*=(const double   );
@@ -327,7 +329,7 @@ namespace DST
             
             binned_pdf2& operator=(const binned_pdf2& );
             
-#pragma mark – PDF modifier
+#pragma mark - PDF modifier
             
             void scale(double, double);
             void shift(double, double);
@@ -343,7 +345,7 @@ namespace DST
             
             double bin_content(int i, int j) const;
             
-#pragma mark – PDF Evaluation
+#pragma mark - PDF Evaluation
             double eval(float , float ) const;	//!<  Estimatition of the probability.
             double eval(int   , int   ) const;	//!<  Estimatition of the probability.
             double eval(double, double) const;	//!<  Estimatition of the probability.
@@ -356,13 +358,13 @@ namespace DST
             
             double getCDF(double, double) const;
             
-#pragma mark – Debug tools
+#pragma mark - Debug tools
             inline double LowEdge(unsigned short axis = 0) const {return (axis == 0) ? x_lowEdge : y_lowEdge;}
             inline double UpEdge (unsigned short axis = 0) const {return (axis == 0) ? x_upEdge  : y_upEdge ;}
             
             void dump() const;
             
-#pragma mark – Predifined PDF
+#pragma mark - Predifined PDF
             static binned_pdf2& gaus(double *, double *, unsigned int nbin = 5000);
             static binned_pdf2 gaus(double, double, double, double, unsigned int nbin = 5000);
             static binned_pdf2& logNormal(double *, double *, unsigned int nbin = 5000);
@@ -426,13 +428,13 @@ namespace DST
 	 */
 	class pdf
 	{
-#pragma mark • protected memeber
+#pragma mark -- protected memeber
 	protected:
 		double fmax;
 		double pdf_norme;
 		
 	private:
-#pragma mark • private memeber
+#pragma mark -- private memeber
 
 		//pdf_function_list fpdf;
 		pdf_list fpdf;
@@ -442,7 +444,7 @@ namespace DST
 
 		double xSlice, ySlice;
 		
-#pragma mark – random generator
+#pragma mark - random generator
 		int64_t seed;
 
 #if __cplusplus >= 201103L
@@ -451,28 +453,28 @@ namespace DST
 		
 	public:
 
-#pragma mark • public memeber
-#pragma mark – constructor/destructor
+#pragma mark -- public memeber
+#pragma mark - constructor/destructor
 		pdf ();
 		~pdf(){fpdf.clear();}
 		
-#pragma mark – Probability function managment
+#pragma mark - Probability function managment
 		//void add_pdf(pdf_function);
         void add_pdf(pdf_function, pdf_param);
         void add_pdf(pdf_distribution);
 		
-#pragma mark – PDF estimator
+#pragma mark - PDF estimator
 		double operator()(double);
 		inline double get_maximum() const {return fmax;}
 		
-#pragma mark – Configuration
+#pragma mark - Configuration
 		void setRange(double, double);
 				
-#pragma mark – Random kernel
+#pragma mark - Random kernel
 		double operator()(void);
         double gen(void);
 		
-#pragma mark – operator
+#pragma mark - operator
 
 		inline void operator*=(double scale){pdf_norme *= scale;}
 		inline void operator/=(double scale){pdf_norme /= scale;}

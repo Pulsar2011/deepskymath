@@ -6,11 +6,14 @@
 //  Definition of cartesian coordinates
 //
 //  Centre de Physic des Particules de Marseille
-//	Copyright (c) 2015, All rights reserved
-//
+//  Licensed under CC BY-NC 4.0
+//  You may share and adapt this code with attribution, 
+//  but not for commercial purposes.
+//  Licence text: https://creativecommons.org/licenses/by-nc/4.0/
 
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
 #include <DSTmath/DSTgeo.h>
 #include <DSTmath/DSTmath.h>
 
@@ -27,7 +30,7 @@ namespace DST
         double point::precision = 1e-10;
         bool   point::debug = false;
         
-#pragma region • ctor/dtor
+#pragma region -- ctor/dtor
         /**
          *  @brief Default constructor
          *  @details Create floating point coordinates
@@ -76,7 +79,7 @@ namespace DST
         }
         
 #pragma endregion 
-#pragma region • Modifier
+#pragma region -- Modifier
         /**
          *  @brief Assign coordinates
          *  @details Assign floating point cartesian coordinate to this point
@@ -198,7 +201,7 @@ namespace DST
         }
         
 #pragma endregion 
-#pragma region • Accessor
+#pragma region -- Accessor
         
         /**
          *  @brief Get distance from the origine
@@ -235,7 +238,7 @@ namespace DST
         }
         
 #pragma endregion 
-#pragma region • Operator
+#pragma region -- Operator
         
         /**
          *  @brief Not equal comparator
@@ -450,7 +453,7 @@ namespace DST
 
         
 #pragma endregion 
-#pragma region • Dump
+#pragma region -- Dump
         
         std::string point::Dump() const
         {
@@ -491,7 +494,7 @@ namespace DST
                 fphi += twopi;
         }
 
-#pragma region • ctor/dtor
+#pragma region -- ctor/dtor
         
         /**
          *  @brief Default constructor
@@ -575,7 +578,7 @@ namespace DST
         vector2D::~vector2D(){};
         
 #pragma endregion 
-#pragma region • Opperator
+#pragma region -- Opperator
         
         bool vector2D::operator!=(const vector2D& v) const
         {
@@ -684,7 +687,7 @@ namespace DST
         }
         
 #pragma endregion 
-#pragma region • Dump
+#pragma region -- Dump
         
         std::string vector2D::Dump() const
         {
@@ -723,7 +726,7 @@ namespace DST
                 ftheta += pi;
         }
 
-#pragma region • ctor/dtor
+#pragma region -- ctor/dtor
         /**
          *  @brief Default constructor
          *  @details Create unitary vector aligned with the \f$x\f$ axis
@@ -799,7 +802,7 @@ namespace DST
         vector3D::~vector3D(){};
         
 #pragma endregion 
-#pragma region • Opperator
+#pragma region -- Opperator
         
         bool vector3D::operator!=(const vector3D& v) const
         {
@@ -1031,7 +1034,7 @@ namespace DST
 
         
 #pragma endregion 
-#pragma region • Dump
+#pragma region -- Dump
         
         std::string vector3D::Dump() const
         {
