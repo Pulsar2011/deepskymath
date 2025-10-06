@@ -62,7 +62,7 @@ namespace DST
              *  @param size Size of the masked array.
              *  @param value Default value of the masked array.
              */
-            MaskedArray(size_t size, T value):fData(size),fMask(size)
+            MaskedArray(size_t size, T value):MaskedArray(size)
             {
                 fData += value;
                 fMask &= false;
@@ -74,13 +74,10 @@ namespace DST
              *  @param value Default value of the masked array.
              *  @param mask Mask of the masked array.
              */
-            MaskedArray(std::valarray<T> value, std::valarray<bool> mask):fData(value.size()),fMask(mask.size())
+            MaskedArray(std::valarray<T> value, std::valarray<bool> mask):fData(value),fMask(mask)
             {
                 if (value.size() != mask.size())
                     throw std::invalid_argument("MaskedArray::MaskedArray: value and mask size mismatch ["+std::to_string(__LINE__)+"]");
-                
-                fData += value;
-                fMask |= mask;
             };
 
             /**
@@ -88,9 +85,8 @@ namespace DST
              *  @details Create a masked array with a given size and a default value.
              *  @param value Default value of the masked array.
              */
-            MaskedArray(std::valarray<T> value):fData(value.size()),fMask(value.size())
+            MaskedArray(std::valarray<T> value):fData(value),fMask(value.size())
             {
-                fData += value;
                 fMask &= false;
             };
 
@@ -127,10 +123,9 @@ namespace DST
              *  @param value Default value of the masked array.
              *  @param mask Mask of the masked array.
              */
-            MaskedArray(const MaskedArray<T>& ma):fData(ma.fData.size()),fMask(ma.fMask.size())
+            MaskedArray(const MaskedArray<T>& ma):fData(ma.fData),fMask(ma.fMask)
             {
-                fData += ma.fData;
-                fMask |= ma.fMask;
+
             }
 
             /**

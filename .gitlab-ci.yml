@@ -10,6 +10,7 @@ stages:
 - .pre
 - build
 - test
+- deploy
 
 variables:
   GIT_SUBMODULE_STRATEGY: normal
@@ -19,7 +20,8 @@ before_script:
   - apt-get update
   - apt-get install -y cmake make
   - apt-get install -y libgsl-dev
-  - apt-get install -y libboost-filesystem-dev libboost-chrono-dev libboost-thread-dev libboost-regex-dev
+  - apt-get install -y doxygen graphviz
+  - apt-get install -y gdb libboost-filesystem-dev libboost-chrono-dev libboost-thread-dev libboost-regex-dev
 
 deps:
   stage: .pre
@@ -33,6 +35,8 @@ build:
   - cd build
   - cmake -Wno-dev ..
   - make -j "$(nproc --all)"
+#  - ls build/exe
+#  - gdb -batch -ex "run" -ex "bt" build/exe/./gTest_MathArray 2>&1 | grep -v ^"No stack."$
   artifacts:
     expire_in: 2 hrs
     paths:
@@ -43,3 +47,18 @@ test:
   script:
   - cd build
   - ctest --output-on-failure
+
+create-pages:
+  stage: deploy
+  script:
+    - mkdir .public
+    - cd build
+    - cmake ..
+    - make doc
+    - mv doc/* ../.public
+    - cd ..
+    - mv .public public
+  artifacts:
+    paths:
+    - public
+    expire_in: 1 week

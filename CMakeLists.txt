@@ -80,8 +80,14 @@ set(BUILD_SHARED_LIBS "YES")
 #-------------------- GCC specifics
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 	# Linux specific code
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -pipe -fexceptions -fPIC  -m64 -Wno-unknown-pragmas")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pipe -fexceptions -fPIC  -Wno-unknown-pragmas")
 	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+
+    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
+        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|i.86")
+            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
+        endif()
+    endif()
 
 	set(OperatingSystem "Linux")
 	ADD_DEFINITIONS(-DLinuxx86_64)
@@ -104,7 +110,7 @@ if(WITH_DEBUG)
 	set(CMAKE_BUILD_TYPE DEBUG)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 else(WITH_DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fno-fast-math -ffp-contract=off -fexcess-precision=standard")
 endif(WITH_DEBUG)
 
 message("${Green}-- CXX COMPILER:${ColourReset} ${CMAKE_CXX_COMPILER}")
