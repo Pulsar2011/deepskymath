@@ -1151,7 +1151,7 @@ TEST(vector3D,aritmetic)
     std::uniform_real_distribution<double> unidl(0,1000.);
     std::uniform_real_distribution<double> unidp(0,2.*acos(-1));
     std::uniform_real_distribution<double> unidt(0,acos(-1));
-    std::default_random_engine re;
+    std::mt19937 re(0xC0FFEE);
 
     for(size_t k=0; k<NTEST; k++)
     {
@@ -1264,6 +1264,10 @@ TEST(vector3D,aritmetic)
         EXPECT_NEAR(v1.Phi()   , (atan2(cv1.Y()/s,cv1.X()/s)>=0)?atan2(cv1.Y()/s,cv1.X()/s):2*acos(-1)+atan2(cv1.Y()/s,cv1.X()/s), point::precision);
         EXPECT_NEAR(v1.Theta() , (acos (cv1.Z()/s/(cv1.Length()/std::abs(s)))>=0)?acos(cv1.Z()/s/(cv1.Length()/std::abs(s))):acos(-1)+acos(cv1.Z()*s/(cv1.Length()/std::abs(s))), point::precision);
 
+        v1 = vector3D(l1,p1,t1);
+        v2 = vector3D(l2,p2,t2);
+        v3 = vector2D(l3,p3);
+
         vector3D cvl = v1^v2;
         EXPECT_NEAR(cvl.X(), v1.Y()*v2.Z()-v1.Z()*v2.Y(), point::precision);
         EXPECT_NEAR(cvl.Y(), v1.Z()*v2.X()-v1.X()*v2.Z(), point::precision);
@@ -1273,11 +1277,6 @@ TEST(vector3D,aritmetic)
         EXPECT_NEAR(clv.X(), v1.Y()*0.-v1.Z()*v3.Y(), point::precision);
         EXPECT_NEAR(clv.Y(), v1.Z()*v3.X()-v1.X()*0., point::precision);
         EXPECT_NEAR(clv.Z(), v1.X()*v3.Y()-v1.Y()*v3.X(), point::precision);
-
-        vector3D cvv = v1^v3;
-        EXPECT_NEAR(cvv.X(), v1.Y()*0.-v1.Z()*v3.Y(), point::precision);
-        EXPECT_NEAR(cvv.Y(), v1.Z()*v3.X()-v1.X()*0., point::precision);
-        EXPECT_NEAR(cvv.Z(), v1.X()*v3.Y()-v1.Y()*v3.X(), point::precision);
 
         point::precision = 1e-9;
     }

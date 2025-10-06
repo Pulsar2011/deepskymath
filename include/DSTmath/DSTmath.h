@@ -91,7 +91,7 @@ namespace DST
             static void   chebder(std::vector<double>, double, double, std::vector<double>&);
             static void   chebder(std::vector<float>, float, float, std::vector<float>&);
             
-            static void chebinv(double, double&, std::vector<double>, double, double);
+            static void chebinv(double, double&, std::vector<double>, double, double, double expsillon = std::numeric_limits<double>::epsilon(), size_t max_iter = 100000);
 
 #if __cplusplus >= 199711L
             static double chebev2(double *, std::vector<double>, std::vector<double>, double *, double *, std::vector<unsigned int> order = {0,0});

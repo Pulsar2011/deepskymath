@@ -418,9 +418,13 @@ TEST(math_array,test_assignement)
     size_t stride_a=2;
     size_t stride_b=1;
 
+#ifdef Darwinx86_64
     std::gslice_array<double> gsa = tdata[std::gslice(start,{size_a,size_b},{stride_a,stride_b})];
 
     ma1 = gsa;
+#else
+    ma1 = (std::gslice_array<double>) tdata[std::gslice(start,{size_a,size_b},{stride_a,stride_b})];
+#endif
     EXPECT_EQ(ma1.size(), size_a*size_b);
 
     size_t n = 0;
@@ -432,9 +436,13 @@ TEST(math_array,test_assignement)
         EXPECT_EQ  (ma1.mask()[i], false);
     }
 
+#ifdef Darwinx86_64
     std::mask_array<double> msa = tdata[tdata > 0];
 
     ma1 = msa;
+#else
+    ma1 = tdata[tdata > 0];
+#endif
     std::valarray<double> tdata_masked = tdata[tdata > 0];
     EXPECT_EQ(ma1.size(), tdata_masked.size());
 

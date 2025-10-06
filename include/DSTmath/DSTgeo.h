@@ -198,6 +198,15 @@ namespace DST
             virtual DST::Math::point EndPoint() const {return point(3, X(), Y(), Z());}
             
 #pragma mark -- Opperator
+#ifdef Linuxx86_64
+            using vector2D::operator<=;
+            using vector2D::operator<;
+            using vector2D::operator>=;
+            using vector2D::operator>;
+            using vector2D::operator==;
+            using vector2D::operator!=;
+#endif
+
             bool operator!=(const vector3D&) const;
             bool operator==(const vector3D&) const;
             bool operator<=(const vector3D&) const;

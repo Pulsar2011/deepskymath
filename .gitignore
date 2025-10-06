@@ -4,8 +4,7 @@ DerivedData/
 bin
 lib
 exe
-doc/html
-doc/latex
+doc
 ._*
 *.o
 *.so
@@ -93,3 +92,6 @@ doc/html
 test/gTest_version.h
 
 googletest/generated
+
+#--------------- MISC
+.gitlab-ci-local
