@@ -60,7 +60,7 @@ namespace DST
             ftitle   = std::string();
             
             for(size_t i = 0; i < N; i++)
-                fscatter.push_back(point(x[i],y[i]));
+                fscatter.push_back(point({x[i],y[i]}));
         }
 
         /**

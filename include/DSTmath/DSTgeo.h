@@ -19,19 +19,22 @@
 #include <stdexcept>
 #include <string>
 
-std::string to_string(const double, const int);
-std::string to_string(const float, const int);
-
 namespace DST
 {
     namespace Math
     {
 #pragma mark - point class definition
         /**
-         *  @class point DSTpoint.h "DSTmath/DSTpoint.h"
+         *  @class point DSTpoint.h "DSTmath/DSTgeo.h"
          *  @brief Definition of cartesian coordinate of flating point.
          *  @details point class describe cartesian coordinate of floating point. It can handle multidimentional reference frame but it is crrently optimized for 1D, 2D and 3D geometry.
+         * @author William GILLARD
          */
+
+        /*!
+        * @class point DSTpoint.h "DSTmath/DSTgeo.h"
+        * @brief Definition floating point cartesian coordinates.
+        */
         class point
         {
 #pragma mark -- protected memeber
@@ -47,7 +50,7 @@ namespace DST
                     fx.push_back(0);
             }
             
-            point(const size_t& n, double, ...);
+            point(const std::initializer_list<double>& );
             point(const point&);
             virtual ~point();
             
@@ -109,6 +112,13 @@ namespace DST
         };
         
 #pragma mark - vector2D class definition
+
+        /*!
+        * @class vector2D DSTpoint.h "DSTmath/DSTpoint.h"
+        * @brief Definition of 2D vector in spherical coordinate.
+        * @details vector2D class describe a 2D vector in spherical coordinate. It is defined by its length and its azimuth angle (phi).
+        * @author William GILLARD
+        */
         class vector2D
         {
 #pragma mark -- protected memeber
@@ -142,7 +152,7 @@ namespace DST
             inline virtual double Y() const {return flength*sin(fphi);}
             inline virtual double Z() const {return 0;}
             
-            virtual DST::Math::point EndPoint() const {return point(2, X(), Y());}
+            virtual DST::Math::point EndPoint() const {return point({X(), Y()});}
          
 #pragma mark -- Opperator
             virtual bool operator!=(const vector2D&) const;
@@ -165,6 +175,12 @@ namespace DST
          };
         
 #pragma mark - vector3D class definition
+
+        /*!
+        * @brief Definition of 3D vector in spherical coordinate.
+        * @details vector3D class describe a 3D vector in spherical coordinate. It is defined by its length, its azimuth angle (phi) and its polar angle (theta).
+        * @author William GILLARD
+        */
         class vector3D: public vector2D
         {
 #pragma mark -- protected memeber
@@ -195,7 +211,7 @@ namespace DST
             inline virtual double Y() const {return flength*sin(ftheta)*sin(fphi);}
             inline virtual double Z() const {return flength*cos(ftheta);}
             
-            virtual DST::Math::point EndPoint() const {return point(3, X(), Y(), Z());}
+            virtual DST::Math::point EndPoint() const {return point({X(), Y(), Z()});}
             
 #pragma mark -- Opperator
 #ifdef Linuxx86_64

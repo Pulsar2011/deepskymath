@@ -24,6 +24,11 @@
 
 namespace DST
 {
+    /*!
+    * namespace DST::Math
+    * @brief Namespace for mathematical function and objects
+    * @details The namespace DST::Math regroups all mathematical function and objects used in DeepSkyTools project.
+    */
     namespace Math
     {
 #pragma region - point class implementation
@@ -33,7 +38,7 @@ namespace DST
 #pragma region -- ctor/dtor
         /**
          *  @brief Default constructor
-         *  @details Create floating point coordinates
+         *  @details Create floating point with empty coordinates
          */
         point::point()
         {
@@ -46,22 +51,9 @@ namespace DST
          *  @param n number of dimension
          *  @param x floating point cartesian coordinates
          */
-        point::point(const size_t& n, double x, ... ):point()
+        point::point(const std::initializer_list<double>& coo):fx(coo)
         {
-            
-            double arg = x;
-            fx.push_back(arg);
-            
-            va_list ap;
-            va_start(ap, x);
-            
-            for(size_t naxe = 1; naxe < n; naxe++)
-            {
-                arg = va_arg(ap, double);
-                
-                fx.push_back(arg);
-            }
-            va_end(ap);
+
         }
         
         /**
@@ -360,6 +352,11 @@ namespace DST
             return *this;
         }
         
+        /*!
+            *  @brief Add coordinates
+            *  @param p cartesian coordinate to add to \c this
+            *  @note Only the smallest dimension between \c this and p is used.
+        */
         void point::operator+=(const DST::Math::point& p)
         {
 #if __cplusplus >= 202002L
@@ -372,6 +369,11 @@ namespace DST
 #endif
         }
         
+        /*!
+            *  @brief Substract coordinates
+            *  @param p cartesian coordinate to subtract to \c this
+            *  @note Only the smallest dimension between \c this and p is used.
+        */
         void point::operator-=(const DST::Math::point& p)
         {
 #if __cplusplus >= 202002L
@@ -384,6 +386,11 @@ namespace DST
 #endif
         }
         
+        /*!
+            *  @brief Multiply coordinates
+            *  @param p cartesian coordinate to multiply to \c this
+            *  @note Only the smallest dimension between \c this and p is used.
+        */
         void point::operator*=(const DST::Math::point& p)
         {
 #if __cplusplus >= 202002L
@@ -396,6 +403,11 @@ namespace DST
 #endif
         }
         
+        /*!
+            *  @brief Devide coordinates
+            *  @param p cartesian coordinate to divide to \c this
+            *  @note Only the smallest dimension between \c this and p is used.
+        */
         void point::operator/=(const DST::Math::point& p)
         {
 #if __cplusplus >= 202002L
@@ -408,41 +420,63 @@ namespace DST
 #endif
         }
         
+        /*!
+            *  @brief Add scalar to each coordinates
+            *  @param p scalar to add to \c this
+            *  @note The scalar is added to each coordinate of \c this
+        */
         void point::operator+=(const double& p)
         {
             for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
                 (*i)+=p;
         }
-        
-        void point::operator-=(const double& p)
-        {
-            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
-                (*i)-=p;
-        }
-        void point::operator*=(const double& p)
-        {
-            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
-                (*i)*=p;
-        }
-        void point::operator/=(const double& p)
-        {
-            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
-                (*i)/=p;
-        }
-        
+
         void point::operator+=(const int& p)
         {
             operator+=(static_cast<double>( p ));
         }
         
+        /*!
+            *  @brief Subtract scalar to each coordinates
+            *  @param p scalar to Subtract to \c this
+            *  @note The scalar is subtracted to each coordinate of \c this
+        */
+        void point::operator-=(const double& p)
+        {
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)-=p;
+        }
+
         void point::operator-=(const int& p)
         {
             operator-=(static_cast<double>( p ));
         }
-        
+
+        /*!
+            *  @brief Multiply scalar to each coordinates
+            *  @param p scalar to Multiply to \c this
+            *  @note The scalar is multiplyed to each coordinate of \c this
+        */
+        void point::operator*=(const double& p)
+        {
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)*=p;
+        }
+
         void point::operator*=(const int& p)
         {
             operator*=(static_cast<double>( p ));
+        }
+
+        /*!
+            *  @brief Divide scalar to each coordinates
+            *  @param p scalar to divide to \c this
+            *  @note The scalar is divided to each coordinate of \c this
+        */
+        void point::operator/=(const double& p)
+        {
+            for(std::vector<double>::iterator i = fx.begin(); i != fx.end(); i++)
+                (*i)/=p;
         }
     
         void point::operator/=(const int& p)
@@ -455,6 +489,11 @@ namespace DST
 #pragma endregion 
 #pragma region -- Dump
         
+        /*!
+            *  @brief Dump point coordinates
+            *  @return string with point coordinates
+            *  @note If DST::Math::point::debug is set to true, the output string is colored in red.
+        */
         std::string point::Dump() const
         {
             std::string sdump = std::string();
@@ -484,6 +523,10 @@ namespace DST
 
 #pragma region - vector2D class implementation
 
+        /*!
+            *  @brief Normalize the angle fphi to [0;2pi]
+            *  @note The method is called by the constructors
+        */
         void vector2D::_phi()
         {
             double twopi = 2. * acos(-1.);
@@ -580,16 +623,32 @@ namespace DST
 #pragma endregion 
 #pragma region -- Opperator
         
+        /*!
+            *  @brief Not equal comparator
+            *  @param v vector to compare to this
+            *  @return true if length or angle of v differs from this
+        */
         bool vector2D::operator!=(const vector2D& v) const
         {
             return std::abs(flength - v.flength) > point::precision || std::abs(fphi - v.fphi) > point::precision;
         }
         
+        /*!
+            *  @brief Equal comparator
+            *  @param v vector to compare to this
+            *  @return true if length and angle of v equal those of this within precision
+        */
         bool vector2D::operator==(const vector2D& v) const
         {
             return std::abs(flength - v.flength) < point::precision && std::abs(fphi - v.fphi) < point::precision;
         }
         
+        /*!
+            *  @brief less or equal comparator
+            *  @param v vector to compare to this
+            *  @return true if this is smaller than or equal to v
+            *  @note DST::Math::vector2D is ordered by length, if the length is equal, angle are check. If both are found to be equals, the vectors are equal. This allow to orders vector in lists and allows to used vector as index in std::map.
+        */
         bool vector2D::operator<=(const vector2D& v) const
         {
             if(operator==(v))
@@ -601,11 +660,23 @@ namespace DST
             return flength - v.flength <= - point::precision;
         }
         
+        /*!
+            *  @brief less comparator
+            *  @param v vector to compare to this
+            *  @return true if this is smaller than v
+            *  @note DST::Math::vector2D is ordered by length, if the length is equal, angle are check. If both are found to be equals, the vectors are equal. This allow to orders vector in lists and allows to used vector as index in std::map.
+        */
         bool vector2D::operator< (const vector2D& v) const
         {
             return operator<=(v) && operator!=(v);
         }
 
+        /*!
+            *  @brief greater or equal comparator
+            *  @param v vector to compare to this
+            *  @return true if this is larger than or equal to v
+            *  @note DST::Math::vector2D is ordered by length, if the length is equal, angle are check. If both are found to be equals, the vectors are equal. This allow to orders vector in lists and allows to used vector as index in std::map.
+        */
         bool vector2D::operator>=(const vector2D& v) const
         {
             if(operator==(v))
@@ -617,6 +688,12 @@ namespace DST
             return (flength - v.flength) >= point::precision;
         }
 
+        /*!
+            *  @brief greater comparator
+            *  @param v vector to compare to this
+            *  @return true if this is larger than v
+            *  @note DST::Math::vector2D is ordered by length, if the length is equal, angle are check. If both are found to be equals, the vectors are equal. This allow to orders vector in lists and allows to used vector as index in std::map.
+        */
         bool vector2D::operator> (const vector2D& v) const
         {
             return operator>=(v) && operator!=(v);
@@ -639,7 +716,8 @@ namespace DST
         }
         
         /**
-         *  @brief Addition
+         *  @brief Addition between 2 vectors
+         * @param v vector to add to this
          */
         void vector2D::operator+=(const vector2D& v)
         {
@@ -652,7 +730,8 @@ namespace DST
         }
         
         /**
-         *  @brief Substraction
+         *  @brief Substraction between 2 vectors
+         * @param v vector to substract to this
          */
         void vector2D::operator-=(const vector2D& v)
         {
@@ -665,7 +744,8 @@ namespace DST
         }
         
         /**
-         *  @brief Scaling
+         *  @brief Scaling vector length
+         * @param s scaling factor
          */
         void vector2D::operator*=(const double s)
         {
@@ -676,7 +756,8 @@ namespace DST
         }
         
         /**
-         *  @brief Scaling
+         *  @brief Scaling vector length
+         * @param s scaling factor
          */
         void vector2D::operator/=(const double s)
         {
@@ -688,7 +769,11 @@ namespace DST
         
 #pragma endregion 
 #pragma region -- Dump
-        
+        /*!
+            *  @brief Dump vector length and angle
+            *  @return string with vector length and angle
+            *  @note If DST::Math::point::debug is set to true, the output string is colored in red.
+        */        
         std::string vector2D::Dump() const
         {
             std::string sdump = std::string();
@@ -717,6 +802,11 @@ namespace DST
 
 #pragma region - vector3D class implementation
 
+
+        /*!
+            *  @brief Normalize the angle ftheta to [0;pi]
+            *  @note The method is called by the constructors
+        */
         void vector3D::_theta()
         {
             double pi = acos(-1.);
@@ -784,16 +874,34 @@ namespace DST
             _theta();
         }
         
+        /**
+         *  @brief Constructor
+         *  @details Construc unitary vector with orientation
+         *  @param t vector elevation angle
+         *  @param p vector azimuth angle
+         *  @note The origin of the vector is at the origin
+         */
         vector3D::vector3D(double p, double t):vector2D(p), ftheta(t)
         {
             _theta();
         }
         
+        /**
+         *  @brief Copy constructor
+         *  @param v vector to be copied
+         *  @note The origin of the vector is at the origin
+         */
         vector3D::vector3D(const vector3D& v):vector2D(v.flength,v.fphi),ftheta(v.ftheta)
         {
             _theta();
         }
         
+        /**
+         *  @brief Constructor
+         *  @details Construc vector by copying a 2D vector and adding a elevation angle
+         *  @param v 2D vector to copy
+         *  @note The origin of the vector is at the origin
+         */
         vector3D::vector3D(const vector2D& v):vector2D(v.Length(), v.Phi()),ftheta(v.Theta())
         {
             _theta();
@@ -804,16 +912,32 @@ namespace DST
 #pragma endregion 
 #pragma region -- Opperator
         
+        /*!
+            *  @brief Not equal comparator
+            *  @param v vector to compare to this
+            *  @return true if length or angle of v differs from this
+        */
         bool vector3D::operator!=(const vector3D& v) const
         {
             return vector2D::operator!=( static_cast<vector2D>(v) ) || std::abs(ftheta - v.ftheta) > point::precision;
         }
         
+        /*!
+            *  @brief Equal comparator
+            *  @param v vector to compare to this
+            *  @return true if length and angle of v equal those of this within precision
+        */
         bool vector3D::operator==(const vector3D& v) const
         {
             return vector2D::operator==( static_cast<vector2D>(v) ) && std::abs(ftheta - v.ftheta) <= point::precision;
         }
         
+        /*!
+            *  @brief less or equal comparator
+            *  @param v vector to compare to this
+            *  @return true if this is smaller than or equal to v
+            *  @note DST::Math::vector3D is ordered by length, if the length is equal, azimuth angle are check. If those are equal, elevation angle are check. If all are found to be equals, the vectors are equal. This allow to orders vector in lists and allows to used vector as index in std::map.
+        */
         bool vector3D::operator<=(const vector3D& v) const
         {
             if(operator==(v))
@@ -831,11 +955,23 @@ namespace DST
                 
         }
         
+        /*!
+            *  @brief less comparator
+            *  @param v vector to compare to this
+            *  @return true if this is smaller than v
+            *  @note DST::Math::vector3D is ordered by length, if the length is equal, azimuth angle are check. If those are equal, elevation angle are check. If all are found to be equals, the vectors are equal. This allow to orders vector in lists and allows to used vector as index in std::map.
+        */
         bool vector3D::operator< (const vector3D& v) const
         {
             return operator<=(v) && operator!=(v);
         }
         
+        /*!
+            *  @brief greater or equal comparator
+            *  @param v vector to compare to this
+            *  @return true if this is larger than or equal to v
+            *  @note DST::Math::vector3D is ordered by length, if the length is equal, azimuth angle are check. If those are equal, elevation angle are check. If all are found to be equals, the vectors are equal. This allow to orders vector in lists and allows to used vector as index in std::map.
+        */
         bool vector3D::operator>=(const vector3D& v) const
         {
             if(operator==(v))
@@ -852,6 +988,12 @@ namespace DST
             return (flength - v.flength) >= point::precision;
         }
         
+        /*!
+            *  @brief greater comparator
+            *  @param v vector to compare to this
+            *  @return true if this is larger than v
+            *  @note DST::Math::vector3D is ordered by length, if the length is equal, azimuth angle are check. If those are equal, elevation angle are check. If all are found to be equals, the vectors are equal. This allow to orders vector in lists and allows to used vector as index in std::map.
+        */
         bool vector3D::operator> (const vector3D& v) const
         {
             return operator>=(v) && operator!=(v);
@@ -875,7 +1017,8 @@ namespace DST
         }
         
         /**
-         *  @brief Addition
+         *  @brief Addition between 2 vectors
+         * @param v vector to add to this
          */
         void vector3D::operator+=(const vector3D& v)
         {
@@ -891,7 +1034,8 @@ namespace DST
         }
 
         /**
-         *  @brief Addition
+         *  @brief Addition between 2 vectors
+         * @param v vector to add to this
          */
         void vector3D::operator+=(const vector2D& v)
         {
@@ -907,7 +1051,8 @@ namespace DST
         }
         
         /**
-         *  @brief Substraction
+         *  @brief Substraction between 2 vectors
+         * @param v vector to substract to this
          */
         void vector3D::operator-=(const vector3D& v)
         {
@@ -923,7 +1068,8 @@ namespace DST
         }
 
         /**
-         *  @brief Substraction
+         *  @brief Substraction between 2 vectors
+         * @param v vector to substract to this
          */
         void vector3D::operator-=(const vector2D& v)
         {
@@ -939,7 +1085,8 @@ namespace DST
         }
         
         /**
-         *  @brief cross product
+         *  @brief vector cross product 
+         * @param v vector to cross with this
          */
         void vector3D::operator^=(const vector3D& v)
         {
@@ -956,7 +1103,8 @@ namespace DST
         }
 
         /**
-         *  @brief cross product
+         *  @brief cross product with a 2D vector (Z=0)
+         * @param v vector to cross with this
          */
         void vector3D::operator^=(const vector2D& v)
         {
@@ -973,7 +1121,8 @@ namespace DST
         }
 
         /**
-         *  @brief Scaling
+         *  @brief Scaling 
+         * @param s scaling factor
          */
         void vector3D::operator*=(const double& s)
         {
@@ -988,6 +1137,7 @@ namespace DST
 
         /**
          *  @brief Scaling
+         * @param s scaling factor
          */
         void vector3D::operator/=(const double& s)
         {            
@@ -1001,6 +1151,7 @@ namespace DST
 
         /**
          *  @brief Offset
+         * @param s offset value
          */
         void vector3D::operator+=(const double& s)
         {
@@ -1017,6 +1168,7 @@ namespace DST
 
         /**
          *  @brief Offset
+         * @param s offset value
          */
         void vector3D::operator-=(const double& s)
         {
@@ -1035,7 +1187,12 @@ namespace DST
         
 #pragma endregion 
 #pragma region -- Dump
-        
+
+        /*!
+            *  @brief Dump vector length and angles
+            *  @return string with vector length and angles
+            *  @note If DST::Math::point::debug is set to true, the output string is colored in red.
+        */
         std::string vector3D::Dump() const
         {
             std::string sdump = vector2D::Dump();
@@ -1063,6 +1220,14 @@ namespace DST
 #pragma endregion
 #pragma region - operator
 
+
+/*!
+    *  @brief Addition between 2 points
+    *  @param p1 first point
+    *  @param p2 second point
+    *  @return new point with the addition of p1 and p2
+    *  @note Points must have the same dimension
+*/
 DST::Math::point operator+(const DST::Math::point& p1, const DST::Math::point& p2)
 {
     if(p1.size() != p2.size())
@@ -1074,6 +1239,13 @@ DST::Math::point operator+(const DST::Math::point& p1, const DST::Math::point& p
     return p_out;
 }
 
+/*!
+    *  @brief Substraction between 2 points
+    *  @param p1 first point
+    *  @param p2 second point
+    *  @return new point with the substraction of p1 and p2
+    *  @note Points must have the same dimension
+*/
 DST::Math::point operator-(const DST::Math::point& p1, const DST::Math::point& p2)
 {
     if(p1.size() != p2.size())
@@ -1085,6 +1257,13 @@ DST::Math::point operator-(const DST::Math::point& p1, const DST::Math::point& p
     return p_out;
 }
 
+/*!
+    *  @brief Multiplication between 2 points
+    *  @param p1 first point
+    *  @param p2 second point
+    *  @return new point with the multiplication of p1 and p2
+    *  @note Points must have the same dimension
+*/
 DST::Math::point operator*(const DST::Math::point& p1, const DST::Math::point& p2)
 {
     if(p1.size() != p2.size())
@@ -1096,6 +1275,13 @@ DST::Math::point operator*(const DST::Math::point& p1, const DST::Math::point& p
     return p_out;
 }
 
+/*!
+    *  @brief Division between 2 points
+    *  @param p1 first point
+    *  @param p2 second point
+    *  @return new point with the division of p1 and p2
+    *  @note Points must have the same dimension
+*/
 DST::Math::point operator/(const DST::Math::point& p1, const DST::Math::point& p2)
 {
     if(p1.size() != p2.size())
@@ -1107,6 +1293,12 @@ DST::Math::point operator/(const DST::Math::point& p1, const DST::Math::point& p
     return p_out;
 }
 
+/*!
+    *  @brief Addition between point and scalar
+    *  @param p1 point
+    *  @param s scalar
+    *  @return new point with the addition of p1 and s
+*/
 DST::Math::point operator+(const DST::Math::point& p1, const double s)
 {
     DST::Math::point p_out = DST::Math::point(p1);
@@ -1115,6 +1307,12 @@ DST::Math::point operator+(const DST::Math::point& p1, const double s)
     return p_out;
 }
 
+/*!
+    *  @brief Substraction between point and scalar
+    *  @param p1 point
+    *  @param s scalar
+    *  @return new point with the substraction of p1 and s
+*/
 DST::Math::point operator-(const DST::Math::point& p1, const double s)
 {
     DST::Math::point p_out = DST::Math::point(p1);
@@ -1123,8 +1321,13 @@ DST::Math::point operator-(const DST::Math::point& p1, const double s)
     return p_out;
 }
 
+/*!
+    *  @brief Multiplication between point and scalar
+    *  @param p1 point
+    *  @param s scalar
+    *  @return new point with the multiplication of p1 and s
+*/
 DST::Math::point operator*(const DST::Math::point& p1, const double s)
-
 {
     DST::Math::point p_out = DST::Math::point(p1);
     p_out*=s;
@@ -1132,6 +1335,12 @@ DST::Math::point operator*(const DST::Math::point& p1, const double s)
     return p_out;
 }
 
+/*!
+    *  @brief Division between point and scalar
+    *  @param p1 point
+    *  @param s scalar
+    *  @return new point with the division of p1 and s
+*/
 DST::Math::point operator/(const DST::Math::point& p1, const double s)
 {
     DST::Math::point p_out = DST::Math::point(p1);
@@ -1140,6 +1349,12 @@ DST::Math::point operator/(const DST::Math::point& p1, const double s)
     return p_out;
 }
 
+/*!
+    *  @brief Addition between scalar and point
+    *  @param s scalar
+    *  @param p1 point
+    *  @return new point with the addition of s and p1
+*/
 DST::Math::point operator+(const double s, const DST::Math::point& p1)
 {
     DST::Math::point p_out = DST::Math::point(p1);
@@ -1148,6 +1363,12 @@ DST::Math::point operator+(const double s, const DST::Math::point& p1)
     return p_out;
 }
 
+/*!
+    *  @brief Substraction between scalar and point
+    *  @param s scalar
+    *  @param p1 point
+    *  @return new point with the substraction of s and p1
+*/
 DST::Math::point operator-(const double s, const DST::Math::point& p1)
 {
     DST::Math::point p_out = DST::Math::point(p1);
@@ -1157,6 +1378,12 @@ DST::Math::point operator-(const double s, const DST::Math::point& p1)
     return p_out;
 }
 
+/*!
+    *  @brief Multiplication between scalar and point
+    *  @param s scalar
+    *  @param p1 point
+    *  @return new point with the multiplication of s and p1
+*/
 DST::Math::point operator*(const double s, const DST::Math::point& p1)
 {
     DST::Math::point p_out = DST::Math::point(p1);
@@ -1165,6 +1392,13 @@ DST::Math::point operator*(const double s, const DST::Math::point& p1)
     return p_out;
 }
 
+/*!
+    *  @brief Division between scalar and point
+    *  @param s scalar
+    *  @param p1 point
+    *  @return new point with the division of s and p1
+    *  @note Each coordinate of the output point is equal to s divided by the corresponding coordinate of p1
+*/
 DST::Math::point operator/(const double s, const DST::Math::point& p1)
 {
     DST::Math::point p_out = DST::Math::point();
@@ -1176,28 +1410,64 @@ DST::Math::point operator/(const double s, const DST::Math::point& p1)
     return p_out;
 }
 
+#pragma region - vector opreators
+
+/*!
+    *  @brief Dot product between 2 vectors
+    *  @param v1 first vector
+    *  @param v2 second vector
+    *  @return scalar with the dot product of v1 and v2
+    *  @note The dot product is computed as \f$ |v1|*|v2|*cos(\Delta L) \f$ where \f$ \Delta L \f$ is the angle between the 2 vectors
+*/
 double operator*(const DST::Math::vector2D& v1, const DST::Math::vector2D& v2)
 {
     double cosDL = cos(v1.Theta())*cos(v2.Theta())+sin(v1.Theta())*sin(v2.Theta())*cos(v1.Phi()-v2.Phi());
     return v1.Length()*v2.Length()*cosDL;
 }
 
+/*!
+    *  @brief Dot product between 2 vectors of different dimension
+    *  @param v1 first vector (2D)
+    *  @param v2 second vector (3D)
+    *  @return scalar with the dot product of v1 and v2
+    *  @note The dot product is computed as \f$ |v1|*|v2|*cos(\Delta L) \f$ where \f$ \Delta L \f$ is the angle between the 2 vectors. The 2D vector is considered as a 3D vector with Z=0
+*/
 double operator*(const DST::Math::vector2D& v1, const DST::Math::vector3D& v2)
 {
     return v1.X()*v2.X() + v1.Y()*v2.Y() + v1.Z()*v2.Z();
 }
 
+/*!
+    *  @brief Dot product between 2 vectors of different dimension
+    *  @param v1 first vector (3D)
+    *  @param v2 second vector (2D)
+    *  @return scalar with the dot product of v1 and v2
+    *  @note The dot product is computed as \f$ |v1|*|v2|*cos(\Delta L) \f$ where \f$ \Delta L \f$ is the angle between the 2 vectors. The 2D vector is considered as a 3D vector with Z=0
+*/
 double operator*(const DST::Math::vector3D& v1, const DST::Math::vector2D& v2)
 {
     return v1.X()*v2.X() + v1.Y()*v2.Y() + v1.Z()*v2.Z();
 }
 
+/*!
+    *  @brief Dot product between 2 vectors
+    *  @param v1 first vector
+    *  @param v2 second vector
+    *  @return scalar with the dot product of v1 and v2
+    *  @note The dot product is computed as \f$ |v1|*|v2|*cos(\Delta L) \f$ where \f$ \Delta L \f$ is the angle between the 2 vectors
+*/
 double operator*(const DST::Math::vector3D& v1, const DST::Math::vector3D& v2)
 {
     double cosDL = cos(v1.Theta())*cos(v2.Theta())+sin(v1.Theta())*sin(v2.Theta())*cos(v1.Phi()-v2.Phi());
     return v1.Length()*v2.Length()*cosDL;
 }
 
+/*!
+    *  @brief Scaling vector length
+    *  @param v1 vector to scale
+    *  @param s scaling factor
+    *  @return new scaled vector
+*/
 DST::Math::vector2D operator*(const DST::Math::vector2D& v1, const double s)
 {
     DST::Math::vector2D v2(v1);
@@ -1205,6 +1475,12 @@ DST::Math::vector2D operator*(const DST::Math::vector2D& v1, const double s)
     return v2;
 }
 
+/*!
+    *  @brief Scaling vector length
+    *  @param v1 vector to scale
+    *  @param s scaling factor
+    *  @return new scaled vector
+*/
 DST::Math::vector2D operator/(const DST::Math::vector2D& v1, const double s)
 {
     DST::Math::vector2D v2(v1);
@@ -1212,6 +1488,12 @@ DST::Math::vector2D operator/(const DST::Math::vector2D& v1, const double s)
     return v2;
 }
 
+/*!
+    *  @brief Scaling vector length
+    *  @param s scaling factor
+    *  @param v1 vector to scale
+    *  @return new scaled vector
+*/
 DST::Math::vector2D operator*(const double s, const DST::Math::vector2D& v1)
 {
     DST::Math::vector2D v2(v1);
@@ -1219,6 +1501,12 @@ DST::Math::vector2D operator*(const double s, const DST::Math::vector2D& v1)
     return v2;
 }
 
+/*!
+    *  @brief Scaling vector length
+    *  @param v1 vector to scale
+    *  @param s scaling factor
+    *  @return new scaled vector
+*/
 DST::Math::vector3D operator*(const DST::Math::vector3D& v1, const double s)
 {
     DST::Math::vector3D v2(v1);
@@ -1226,6 +1514,12 @@ DST::Math::vector3D operator*(const DST::Math::vector3D& v1, const double s)
     return v2;
 }
 
+/*!
+    *  @brief Scaling vector length
+    *  @param v1 vector to scale
+    *  @param s scaling factor
+    *  @return new scaled vector
+*/
 DST::Math::vector3D operator/(const DST::Math::vector3D& v1, const double s)
 {
     DST::Math::vector3D v2(v1);
@@ -1233,6 +1527,12 @@ DST::Math::vector3D operator/(const DST::Math::vector3D& v1, const double s)
     return v2;
 }
 
+/*!
+    *  @brief Scaling vector length
+    *  @param s scaling factor
+    *  @param v1 vector to scale
+    *  @return new scaled vector
+*/
 DST::Math::vector3D operator*(const double s, const DST::Math::vector3D& v1)
 {
     DST::Math::vector3D v2(v1);
@@ -1240,6 +1540,13 @@ DST::Math::vector3D operator*(const double s, const DST::Math::vector3D& v1)
     return v2;
 }
 
+/*!
+    *  @brief Cross product between 2 vectors
+    *  @param v1 first vector
+    *  @param v2 second vector
+    *  @return new vector with the cross product of v1 and v2
+    *  @note The cross product is only defined between 3D vectors. If one of the vector is 2D, it is considered as a 3D vector with Z=0
+*/
 DST::Math::vector3D operator^(const DST::Math::vector2D& v1, const DST::Math::vector2D& v2)
 {
     DST::Math::vector3D vv1(v1);
@@ -1249,6 +1556,13 @@ DST::Math::vector3D operator^(const DST::Math::vector2D& v1, const DST::Math::ve
     return vv1;
 }
 
+/*!
+    *  @brief Cross product between 2 vectors of different dimension
+    *  @param v1 first vector (2D)
+    *  @param v2 second vector (3D)
+    *  @return new vector with the cross product of v1 and v2
+    *  @note The cross product is only defined between 3D vectors. The 2D vector is considered as a 3D vector with Z=0
+*/
 DST::Math::vector3D operator^(const DST::Math::vector2D& v1, const DST::Math::vector3D& v2)
 {
     DST::Math::vector3D vv1(v1);
@@ -1257,6 +1571,13 @@ DST::Math::vector3D operator^(const DST::Math::vector2D& v1, const DST::Math::ve
     return vv1;
 }
 
+/*!
+    *  @brief Cross product between 2 vectors of different dimension
+    *  @param v1 first vector (3D)
+    *  @param v2 second vector (2D)
+    *  @return new vector with the cross product of v1 and v2
+    *  @note The cross product is only defined between 3D vectors. The 2D vector is considered as a 3D vector with Z=0
+*/
 DST::Math::vector3D operator^(const DST::Math::vector3D& v1, const DST::Math::vector2D& v2)
 {
     DST::Math::vector3D vv1(v1);
@@ -1266,6 +1587,13 @@ DST::Math::vector3D operator^(const DST::Math::vector3D& v1, const DST::Math::ve
     return vv1;
 }
 
+/*!
+    *  @brief Cross product between 2 vectors
+    *  @param v1 first vector (3D)
+    *  @param v2 second vector (3D)
+    *  @return new vector with the cross product of v1 and v2
+    *  @note The cross product is only defined between 3D vectors.
+*/
 DST::Math::vector3D operator^(const DST::Math::vector3D& v1, const DST::Math::vector3D& v2)
 {
     DST::Math::vector3D vv1(v1);
@@ -1275,4 +1603,5 @@ DST::Math::vector3D operator^(const DST::Math::vector3D& v1, const DST::Math::ve
     return vv1;
 }
 
+#pragma endregion
 #pragma endregion
