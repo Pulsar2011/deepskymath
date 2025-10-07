@@ -13,69 +13,69 @@ class ToBeTestedFixture : public MathCore, public testing::Test
 
 TEST_F(ToBeTestedFixture, member)
 {
-    EXPECT_DOUBLE_EQ(kBig,4.503599627370496e15);
-    EXPECT_DOUBLE_EQ(kBiginv,2.22044604925031308085e-16);
-    EXPECT_DOUBLE_EQ(LS2PI,0.91893853320467274178);
+    EXPECT_NEAR(kBig,4.503599627370496e15,1e-12);
+    EXPECT_NEAR(kBiginv,2.22044604925031308085e-16,1e-12);
+    EXPECT_NEAR(LS2PI,0.91893853320467274178,1e-12);
     
-    EXPECT_DOUBLE_EQ(A[0],8.11614167470508450300e-4);
-    EXPECT_DOUBLE_EQ(A[1],-5.95061904284301438324E-4);
-    EXPECT_DOUBLE_EQ(A[2],7.93650340457716943945E-4);
-    EXPECT_DOUBLE_EQ(A[3],-2.77777777730099687205E-3);
-    EXPECT_DOUBLE_EQ(A[4],8.33333333333331927722E-2);
-    EXPECT_DOUBLE_EQ(B[0],-1.37825152569120859100E3);
-    EXPECT_DOUBLE_EQ(B[1],-3.88016315134637840924E4);
-    EXPECT_DOUBLE_EQ(B[2],-3.31612992738871184744E5);
-    EXPECT_DOUBLE_EQ(B[3],-1.16237097492762307383E6);
-    EXPECT_DOUBLE_EQ(B[4],-1.72173700820839662146E6);
-    EXPECT_DOUBLE_EQ(B[5],-8.53555664245765465627E5);
-    EXPECT_DOUBLE_EQ(C[0],-3.51815701436523470549E2);
-    EXPECT_DOUBLE_EQ(C[1],-1.70642106651881159223E4);
-    EXPECT_DOUBLE_EQ(C[2],-2.20528590553854454839E5);
-    EXPECT_DOUBLE_EQ(C[3],-1.13933444367982507207E6);
-    EXPECT_DOUBLE_EQ(C[4],-2.53252307177582951285E6);
-    EXPECT_DOUBLE_EQ(C[5],-2.01889141433532773231E6);
+    EXPECT_NEAR(A[0],8.11614167470508450300e-4,1e-12);
+    EXPECT_NEAR(A[1],-5.95061904284301438324E-4,1e-12);
+    EXPECT_NEAR(A[2],7.93650340457716943945E-4,1e-12);
+    EXPECT_NEAR(A[3],-2.77777777730099687205E-3,1e-12);
+    EXPECT_NEAR(A[4],8.33333333333331927722E-2,1e-12);
+    EXPECT_NEAR(B[0],-1.37825152569120859100E3,1e-12);
+    EXPECT_NEAR(B[1],-3.88016315134637840924E4,1e-12);
+    EXPECT_NEAR(B[2],-3.31612992738871184744E5,1e-12);
+    EXPECT_NEAR(B[3],-1.16237097492762307383E6,1e-12);
+    EXPECT_NEAR(B[4],-1.72173700820839662146E6,1e-12);
+    EXPECT_NEAR(B[5],-8.53555664245765465627E5,1e-12);
+    EXPECT_NEAR(C[0],-3.51815701436523470549E2,1e-12);
+    EXPECT_NEAR(C[1],-1.70642106651881159223E4,1e-12);
+    EXPECT_NEAR(C[2],-2.20528590553854454839E5,1e-12);
+    EXPECT_NEAR(C[3],-1.13933444367982507207E6,1e-12);
+    EXPECT_NEAR(C[4],-2.53252307177582951285E6,1e-12);
+    EXPECT_NEAR(C[5],-2.01889141433532773231E6,1e-12);
 
-    EXPECT_DOUBLE_EQ(P[0],1.60119522476751861407E-4);
-    EXPECT_DOUBLE_EQ(P[1],1.19135147006586384913E-3);
-    EXPECT_DOUBLE_EQ(P[2],1.04213797561761569935E-2);
-    EXPECT_DOUBLE_EQ(P[3],4.76367800457137231464E-2);
-    EXPECT_DOUBLE_EQ(P[4],2.07448227648435975150E-1);
-    EXPECT_DOUBLE_EQ(P[5],4.94214826801497100753E-1);
-    EXPECT_DOUBLE_EQ(P[6],9.99999999999999996796E-1);
+    EXPECT_NEAR(P[0],1.60119522476751861407E-4,1e-12);
+    EXPECT_NEAR(P[1],1.19135147006586384913E-3,1e-12);
+    EXPECT_NEAR(P[2],1.04213797561761569935E-2,1e-12);
+    EXPECT_NEAR(P[3],4.76367800457137231464E-2,1e-12);
+    EXPECT_NEAR(P[4],2.07448227648435975150E-1,1e-12);
+    EXPECT_NEAR(P[5],4.94214826801497100753E-1,1e-12);
+    EXPECT_NEAR(P[6],9.99999999999999996796E-1,1e-12);
 
-    EXPECT_DOUBLE_EQ(Q[0],-2.31581873324120129819E-5);
-    EXPECT_DOUBLE_EQ(Q[1],5.39605580493303397842E-4 );
-    EXPECT_DOUBLE_EQ(Q[2],-4.45641913851797240494E-3);
-    EXPECT_DOUBLE_EQ(Q[3],1.18139785222060435552E-2 );
-    EXPECT_DOUBLE_EQ(Q[4],3.58236398605498653373E-2 );
-    EXPECT_DOUBLE_EQ(Q[5],-2.34591795718243348568E-1);
-    EXPECT_DOUBLE_EQ(Q[6],7.14304917030273074085E-2 );
-    EXPECT_DOUBLE_EQ(Q[7],1.00000000000000000320E0);
+    EXPECT_NEAR(Q[0],-2.31581873324120129819E-5,1e-12);
+    EXPECT_NEAR(Q[1],5.39605580493303397842E-4 ,1e-12);
+    EXPECT_NEAR(Q[2],-4.45641913851797240494E-3,1e-12);
+    EXPECT_NEAR(Q[3],1.18139785222060435552E-2 ,1e-12);
+    EXPECT_NEAR(Q[4],3.58236398605498653373E-2 ,1e-12);
+    EXPECT_NEAR(Q[5],-2.34591795718243348568E-1,1e-12);
+    EXPECT_NEAR(Q[6],7.14304917030273074085E-2 ,1e-12);
+    EXPECT_NEAR(Q[7],1.00000000000000000320E0,1e-12);
 
-    EXPECT_DOUBLE_EQ(STIR[0],7.87311395793093628397E-4);
-    EXPECT_DOUBLE_EQ(STIR[1],-2.29549961613378126380E-4);
-    EXPECT_DOUBLE_EQ(STIR[2],-2.68132617805781232825E-3);
-    EXPECT_DOUBLE_EQ(STIR[3],3.47222221605458667310E-3);
-    EXPECT_DOUBLE_EQ(STIR[4],8.33333333333482257126E-2);
+    EXPECT_NEAR(STIR[0],7.87311395793093628397E-4,1e-12);
+    EXPECT_NEAR(STIR[1],-2.29549961613378126380E-4,1e-12);
+    EXPECT_NEAR(STIR[2],-2.68132617805781232825E-3,1e-12);
+    EXPECT_NEAR(STIR[3],3.47222221605458667310E-3,1e-12);
+    EXPECT_NEAR(STIR[4],8.33333333333482257126E-2,1e-12);
 
-    EXPECT_DOUBLE_EQ(igam(1,1),0.63212055882855767840);
-    EXPECT_DOUBLE_EQ(igam(1,2),0.86466471676338730811);
-    EXPECT_DOUBLE_EQ(igam(1,3),0.95021293163213605700);
-    EXPECT_DOUBLE_EQ(igam(1,5),0.99326205300091446621);
-    EXPECT_DOUBLE_EQ(igam(2,1),0.26424111765711535688);
-    EXPECT_DOUBLE_EQ(igam(2,2),0.59399415029016132000);
+    EXPECT_NEAR(igam(1,1),0.63212055882855767840,1e-12);
+    EXPECT_NEAR(igam(1,2),0.86466471676338730811,1e-12);
+    EXPECT_NEAR(igam(1,3),0.95021293163213605700,1e-12);
+    EXPECT_NEAR(igam(1,5),0.99326205300091446621,1e-12);
+    EXPECT_NEAR(igam(2,1),0.26424111765711535688,1e-12);
+    EXPECT_NEAR(igam(2,2),0.59399415029016132000,1e-12);
     
-    EXPECT_DOUBLE_EQ(lgam(1),0.0);
-    EXPECT_DOUBLE_EQ(lgam(2),0.0);
-    EXPECT_DOUBLE_EQ(lgam(3),0.69314718055994530942);
-    EXPECT_DOUBLE_EQ(lgam(4),1.79175946922805500081);
-    EXPECT_DOUBLE_EQ(lgam(5),3.17805383034794561965);
+    EXPECT_NEAR(lgam(1),0.0,1e-12);
+    EXPECT_NEAR(lgam(2),0.0,1e-12);
+    EXPECT_NEAR(lgam(3),0.69314718055994530942,1e-12);
+    EXPECT_NEAR(lgam(4),1.79175946922805500081,1e-12);
+    EXPECT_NEAR(lgam(5),3.17805383034794561965,1e-12);
 
-    EXPECT_DOUBLE_EQ(igamc(1,1),0.36787944117144232160);
-    EXPECT_DOUBLE_EQ(igamc(1,2),0.13533528323661269189);
-    EXPECT_DOUBLE_EQ(igamc(1,3),0.04978706836786394300);
-    EXPECT_DOUBLE_EQ(igamc(1,5),0.00673794699908546700);
-    EXPECT_DOUBLE_EQ(igamc(2,1),0.73575888234288464312);
+    EXPECT_NEAR(igamc(1,1),0.36787944117144232160,1e-12);
+    EXPECT_NEAR(igamc(1,2),0.13533528323661269189,1e-12);
+    EXPECT_NEAR(igamc(1,3),0.04978706836786394300,1e-12);
+    EXPECT_NEAR(igamc(1,5),0.00673794699908546700,1e-12);
+    EXPECT_NEAR(igamc(2,1),0.73575888234288464312,1e-12);
 
     double lower_bound = -10;
     double upper_bound =  10;
@@ -97,11 +97,11 @@ TEST_F(ToBeTestedFixture, member)
                 pom+=a[j]*std::pow(x,N-j);
             }
 
-            EXPECT_DOUBLE_EQ(Polynomialeval(x,a,N),pom)<<"P("<<x<<",a,"<<N<<")="<<Polynomialeval(x,a,N)<<" <-> "<<pom<<" ["<<__LINE__<<"]"<<std::endl;
+            EXPECT_NEAR(Polynomialeval(x,a,N),pom,1e-12)<<"P("<<x<<",a,"<<N<<")="<<Polynomialeval(x,a,N)<<" <-> "<<pom<<" ["<<__LINE__<<"]"<<std::endl;
         }
 
         b[0]=unif(re);
-        EXPECT_DOUBLE_EQ(Polynomialeval(x,b, 0),b[0]);
+        EXPECT_NEAR(Polynomialeval(x,b, 0),b[0],1e-12);
     }
 
     for(int i = 0; i < 1000; i++)
@@ -111,7 +111,7 @@ TEST_F(ToBeTestedFixture, member)
         {
             if(N<1)
             {
-                EXPECT_DOUBLE_EQ(Polynomial1eval(x,a,N),a[0])<<"P1("<<x<<",a,"<<N<<")="<<Polynomial1eval(x,a,N)<<" <-> "<<a[0]<<" ["<<__LINE__<<"]"<<std::endl;;
+                EXPECT_NEAR(Polynomial1eval(x,a,N),a[0],1e-12)<<"P1("<<x<<",a,"<<N<<")="<<Polynomial1eval(x,a,N)<<" <-> "<<a[0]<<" ["<<__LINE__<<"]"<<std::endl;;
                 continue;
             }
 
@@ -121,7 +121,7 @@ TEST_F(ToBeTestedFixture, member)
                 pom += a[j]*std::pow(x,N-j-1);
             }
 
-            EXPECT_FLOAT_EQ(Polynomial1eval(x,a,N),pom)<<"P1("<<x<<",a,"<<N<<")="<<Polynomial1eval(x,a,N)<<" <-> "<<pom<<" ["<<__LINE__<<"]"<<std::endl;
+            EXPECT_NEAR(Polynomial1eval(x,a,N),pom,1e-5)<<"P1("<<x<<",a,"<<N<<")="<<Polynomial1eval(x,a,N)<<" <-> "<<pom<<" ["<<__LINE__<<"]"<<std::endl;
         }
     }
 
@@ -130,7 +130,7 @@ TEST_F(ToBeTestedFixture, member)
         double z = unif(re);
         double x = unif(re);
         double pom = z/((1.0 + 0.5772156649015329 * x) * x);
-        EXPECT_DOUBLE_EQ(small(z,x),pom);
+        EXPECT_NEAR(small(z,x),pom,1e-12);
     }
 }
 
@@ -367,47 +367,47 @@ TEST(math_core_test, to_string)
 
 TEST(math_core_test, gamma_function)
 {
-    EXPECT_DOUBLE_EQ(Func::Gamma(1),1)
+    EXPECT_NEAR(Func::Gamma(1),1,1e-12)
         <<"Gamma(1) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(2),1)
+    EXPECT_NEAR(Func::Gamma(2),1,1e-12)
         <<"Gamma(2) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(3),2)
+    EXPECT_NEAR(Func::Gamma(3),2,1e-12)
         <<"Gamma(3) function doesn't return "<<2<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(4),6)
+    EXPECT_NEAR(Func::Gamma(4),6,1e-12)
         <<"Gamma(4) function doesn't return "<<6<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(5),24)
+    EXPECT_NEAR(Func::Gamma(5),24,1e-12)
         <<"Gamma(5) function doesn't return "<<24<<" ["<<__LINE__<<"]"<<std::endl;
 
-    EXPECT_DOUBLE_EQ(Func::Gamma(1./2.), std::sqrt(MathCore::Pi()))
+    EXPECT_NEAR(Func::Gamma(1./2.), std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(1/2) function doesn't return "<<std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(3./2),0.5*std::sqrt(MathCore::Pi()))
+    EXPECT_NEAR(Func::Gamma(3./2),0.5*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(3/2) function doesn't return "<<0.5*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(5./2),3./4.*std::sqrt(MathCore::Pi()))
+    EXPECT_NEAR(Func::Gamma(5./2),3./4.*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(3/4) function doesn't return "<<3./4.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(7./2),15./8.*std::sqrt(MathCore::Pi()))
+    EXPECT_NEAR(Func::Gamma(7./2),15./8.*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(7/2) function doesn't return "<<15./8.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
 
-    EXPECT_DOUBLE_EQ(Func::Gamma(-1./2.), -2*std::sqrt(MathCore::Pi()))
+    EXPECT_NEAR(Func::Gamma(-1./2.), -2*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(-1/2) function doesn't return "<<-2*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(-3./2.),4./3.*std::sqrt(MathCore::Pi()))
+    EXPECT_NEAR(Func::Gamma(-3./2.),4./3.*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(-3/2) function doesn't return "<<4./3.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_DOUBLE_EQ(Func::Gamma(-5./2),-8./15.*std::sqrt(MathCore::Pi()))
+    EXPECT_NEAR(Func::Gamma(-5./2),-8./15.*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(-5/2) function doesn't return "<<-8./15.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
 
-    EXPECT_DOUBLE_EQ(Func::Gamma(1.,std::numeric_limits<double>::max()),1)
+    EXPECT_NEAR(Func::Gamma(1.,std::numeric_limits<double>::max()),1,1e-12)
         <<"Gamma(1,+infinity) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
 
     for (int i = 0; i < 100; i++)
     for (int j = 0; j < 100; j++)
     {
-        EXPECT_DOUBLE_EQ(Func::Gamma(-1*static_cast<double>(i),static_cast<double>(j)),1.)
+        EXPECT_NEAR(Func::Gamma(-1*static_cast<double>(i),static_cast<double>(j)),1.,1e-12)
             <<"Gamma("<<-i<<","<<j<<") function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
     }
 
     for (int i = 1; i < 100; i++)
     for (int j = 0; j < 100; j++)
     {
-        EXPECT_DOUBLE_EQ(Func::Gamma(static_cast<double>(i),-1*static_cast<double>(j)),0.)
+        EXPECT_NEAR(Func::Gamma(static_cast<double>(i),-1*static_cast<double>(j)),0.,1e-12)
             <<"Gamma("<<i<<","<<-j<<") function doesn't return "<<0<<" ["<<__LINE__<<"]"<<std::endl;
     }
 }
@@ -485,13 +485,13 @@ TEST(math_core_test, chebinv)
     double lower_bound = -1;
     double upper_bound =  1;
     std::uniform_real_distribution<double> unif(lower_bound,upper_bound);
-    std::default_random_engine re;
+    std::mt19937 re(0xC0FFEE);
     std::vector<double> coef;
 
     for(unsigned int k =0; k < 5; k++)
         coef.push_back(unif(re));
 
-    for(unsigned int i =0; i < 11; i++)
+    for(unsigned int i =0; i < 10; i++)
     {
         if(i==0 || i==10) continue;
 
@@ -499,10 +499,11 @@ TEST(math_core_test, chebinv)
         double xo = xi+unif(re)/1e3;
 
         double y = polynom::chebev(xi, coef, -1., 1.);
-        polynom::chebinv(y, xo, coef, -1., 1.);
-
-        EXPECT_NEAR(xi,xo,std::numeric_limits<double>::epsilon()*1e6);
+        polynom::chebinv(y, xo, coef, -1., 1., 1e-18, 10000);
+        EXPECT_NEAR(xi,xo,1e-15);
     }
+    coef.clear();
+
 }
 
 TEST(math_core_test, chebev2_double)

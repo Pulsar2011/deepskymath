@@ -599,7 +599,7 @@ namespace DST
            
             double bpa, bma;
             
-            std::vector<double> f = std::vector<double>(n-1);
+            std::vector<double> f = std::vector<double>(n);
             
             bma=0.5*(b-a);
             bpa=0.5*(b+a);
@@ -640,7 +640,7 @@ namespace DST
             
             float bpa, bma;
             
-            std::vector<double> f = std::vector<double>(n-1);
+            std::vector<double> f = std::vector<double>(n);
             
             bma=0.5*(b-a);
             bpa=0.5*(b+a);
@@ -797,45 +797,51 @@ namespace DST
             return;
         }
         
-        void polynom::chebinv(double y, double& x, std::vector<double> c, double a, double b)
+        void polynom::chebinv(double y, double& x, std::vector<double> c, double a, double b, double expsillon, size_t max_iter)
         {
-            std::vector<double> cder=std::vector<double>(c.size());
+            std::vector<double> cder(c.size());
             chebder(c,a,b,cder);
-            
-            double xn    = x;
-            size_t count = 0;
-            double fx = std::numeric_limits<double>::max();
-            double dfx= std::numeric_limits<double>::min();
-            double min_x =0;
-            double min_fx=std::numeric_limits<double>::max();
-            double min_dfx=std::numeric_limits<double>::max();
-            
-            while( fabs(fx)/fabs(y) > std::numeric_limits<double>::epsilon())
+
+            // Clamp initial guess to [a,b]
+            auto clamp = [](double v, double lo, double hi){ return std::max(lo, std::min(v, hi)); };
+            x = clamp(x, a, b);
+
+            size_t count=0;
+            for (size_t it = 0; it < max_iter; ++it)
             {
+                count++;
+                double fx  = y - chebev(x, c,    a, b);
+                if (std::abs(fx) <= expsillon * std::max(1.0, std::abs(y))) return;
+
+                double dfx =      chebev(x, cder, a, b);
+                if (!std::isfinite(dfx) || dfx == 0.0)
+                {
+                    // Derivative too small: damp toward interval center
+                    x = 0.5*(x + 0.5*(a+b));
+                    continue;
+                }
+
+                double step = fx/dfx;
+                double xn   = clamp(x + step, a, b);
+
+                // Backtracking if not improving residual
+                double fnew = y - chebev(xn, c, a, b);
+                int bt = 0;
+                while (std::abs(fnew) > std::abs(fx) && bt < 12)
+                {
+                    step *= 0.5;
+                    xn    = clamp(x + step, a, b);
+                    fnew  = y - chebev(xn, c, a, b);
+                    ++bt;
+                }
+
                 x = xn;
-                count ++;
-                
-                try
-                {
-                    fx  = y - chebev(x,c,a,b);
-                    dfx =     chebev(x,cder,a,b);
+            }
 
-                    min_fx = (fx < min_fx)?fx:min_fx;
-                    min_x  = (fx == min_fx)?x:min_x;
-                    min_dfx= (dfx < min_dfx)?dfx:min_dfx;
-                    
-                    xn = x + fx/dfx;
-                }
-                catch(...)
-                {
-                    xn = min_x + min_fx/min_dfx/2;
-                }
-
-                if(count > 10000)
-                {
-                    cder.clear();
-                    throw std::runtime_error("\033[31m[polynom::chebinv]\033[0m Too many iteration. The algorithm did not converge.");
-                }
+            if(count >= max_iter)
+            {
+                cder.clear();
+                throw std::runtime_error("\033[31m[polynom::chebinv]\033[0m Too many iteration. The algorithm did not converge.");
             }
             cder.clear();
         }
