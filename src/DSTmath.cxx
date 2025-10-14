@@ -776,7 +776,17 @@ namespace DST
             return chebev2(x, cx, cy, a, b, order);
         }
 #endif
-        
+      
+        /**
+         * @brief Evaluate derivative of a Chebychev
+         * 
+         * @details a new Chebyshev object that approximates the derivative of the existing function over the same range [ \c a, \c b ].
+         * @param c Cheapychev polynomial coefficients
+         * @param a Lower edge of the range
+         * @param b Upper edge of the range
+         * @param cder Upon return the Chebychev polynomial coefficients of the derivative
+         * 
+        */
         void polynom::chebder(std::vector<double> c, double a, double b, std::vector<double>& cder)
         {
             int j;
@@ -834,6 +844,17 @@ namespace DST
             return;
         }
         
+        /**
+         * @brief Evaluate the inverse of the Chebychev polynomial expansion at \f$y\f$ include in the range \f$[a, [b\f$. The Chebyshev polynomial expansion \f$\sum_{k=0}^{n-1} c_kT_k(y) − c_0/2\f$ is evaluated at a point \f$ y = \frac{x − 0.5(b + a)}{0.5(b − a)}\f$. Note that the bases convertion from x to y is done automatically. Algorithm is based on Newton-Raphson method with backtracking from Numerical Recipes in C.
+         * 
+         * @param y \f$y\f$ coordinate value where to evaluate the inverse of the Chebychev polynomial expansion
+         * @param x Upon return the \f$x\f$ coordinate value that satisfy the Chebychev polynomial expansion \f$y\f$. The initial guess must be provided.
+         * @param c The list of Chebychev polynomial coefficients
+         * @param a The lower edge of the real space domain
+         * @param b The upper edge of the real space domain
+         * @param expsillon Precision goal of the methods. Once the residual \f$ y - \sum_{k=0}^{n-1} c_kT_k(y) − c_0/2\f$ is below \c expsillon,  the method stops.
+         * @param max_iter Max iteration allowed. If the method does not converge within \c max_iter, an exception is thrown.
+         */
         void polynom::chebinv(double y, double& x, std::vector<double> c, double a, double b, double expsillon, size_t max_iter)
         {
             std::vector<double> cder(c.size());

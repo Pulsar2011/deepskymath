@@ -55,7 +55,7 @@ create-pages:
     - cd build
     - cmake ..
     - make doc
-    - mv doc/* ../.public
+    - mv doc/html/* ../.public
     - cd ..
     - mv .public public
   pages:
