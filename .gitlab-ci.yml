@@ -35,8 +35,6 @@ build:
   - cd build
   - cmake -Wno-dev ..
   - make -j "$(nproc --all)"
-#  - ls build/exe
-#  - gdb -batch -ex "run" -ex "bt" build/exe/./gTest_MathArray 2>&1 | grep -v ^"No stack."$
   artifacts:
     expire_in: 2 hrs
     paths:
@@ -50,13 +48,15 @@ test:
 
 create-pages:
   stage: deploy
+  needs:
+    - job: build
+      artifacts: true
   script:
-    - mkdir .public
-    - cd build
-    - cmake ..
+    - mkdir public
+    - ls -l
+    - cmake .
     - make doc
-    - mv doc/* ../.public
-    - cd ..
-    - mv .public public
+    - mv doc/html/* ./public
+    - ls public
   pages:
     expire_in: 1 week

@@ -245,7 +245,7 @@ using namespace DSM;
     if(this_ver == NULL)
       gGIT::this_ver = new gGIT();
 
-    return !(this_ver->_VERSION.compare(ver));
+    return (this_ver->_VERSION.compare(ver)==0);
   }
 
   bool gGIT::operator!=(const std::string& ver)
@@ -253,5 +253,5 @@ using namespace DSM;
     if(this_ver == NULL)
       gGIT::this_ver = new gGIT();
       
-    return !((*this_ver) == ver);
+    return (this_ver->_VERSION.compare(ver)!=0);
   }

@@ -367,47 +367,47 @@ TEST(math_core_test, to_string)
 
 TEST(math_core_test, gamma_function)
 {
-    EXPECT_NEAR(Func::Gamma(1),1,1e-12)
+    EXPECT_NEAR(MathCore::Gamma(1),1,1e-12)
         <<"Gamma(1) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(2),1,1e-12)
+    EXPECT_NEAR(MathCore::Gamma(2),1,1e-12)
         <<"Gamma(2) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(3),2,1e-12)
+    EXPECT_NEAR(MathCore::Gamma(3),2,1e-12)
         <<"Gamma(3) function doesn't return "<<2<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(4),6,1e-12)
+    EXPECT_NEAR(MathCore::Gamma(4),6,1e-12)
         <<"Gamma(4) function doesn't return "<<6<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(5),24,1e-12)
+    EXPECT_NEAR(MathCore::Gamma(5),24,1e-12)
         <<"Gamma(5) function doesn't return "<<24<<" ["<<__LINE__<<"]"<<std::endl;
 
-    EXPECT_NEAR(Func::Gamma(1./2.), std::sqrt(MathCore::Pi()),1e-12)
+    EXPECT_NEAR(MathCore::Gamma(1./2.), std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(1/2) function doesn't return "<<std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(3./2),0.5*std::sqrt(MathCore::Pi()),1e-12)
+    EXPECT_NEAR(MathCore::Gamma(3./2),0.5*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(3/2) function doesn't return "<<0.5*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(5./2),3./4.*std::sqrt(MathCore::Pi()),1e-12)
+    EXPECT_NEAR(MathCore::Gamma(5./2),3./4.*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(3/4) function doesn't return "<<3./4.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(7./2),15./8.*std::sqrt(MathCore::Pi()),1e-12)
+    EXPECT_NEAR(MathCore::Gamma(7./2),15./8.*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(7/2) function doesn't return "<<15./8.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
 
-    EXPECT_NEAR(Func::Gamma(-1./2.), -2*std::sqrt(MathCore::Pi()),1e-12)
+    EXPECT_NEAR(MathCore::Gamma(-1./2.), -2*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(-1/2) function doesn't return "<<-2*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(-3./2.),4./3.*std::sqrt(MathCore::Pi()),1e-12)
+    EXPECT_NEAR(MathCore::Gamma(-3./2.),4./3.*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(-3/2) function doesn't return "<<4./3.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
-    EXPECT_NEAR(Func::Gamma(-5./2),-8./15.*std::sqrt(MathCore::Pi()),1e-12)
+    EXPECT_NEAR(MathCore::Gamma(-5./2),-8./15.*std::sqrt(MathCore::Pi()),1e-12)
         <<"Gamma(-5/2) function doesn't return "<<-8./15.*std::sqrt(MathCore::Pi())<<" ["<<__LINE__<<"]"<<std::endl;
 
-    EXPECT_NEAR(Func::Gamma(1.,std::numeric_limits<double>::max()),1,1e-12)
+    EXPECT_NEAR(MathCore::Gamma(1.,std::numeric_limits<double>::max()),1,1e-12)
         <<"Gamma(1,+infinity) function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
 
     for (int i = 0; i < 100; i++)
     for (int j = 0; j < 100; j++)
     {
-        EXPECT_NEAR(Func::Gamma(-1*static_cast<double>(i),static_cast<double>(j)),1.,1e-12)
+        EXPECT_NEAR(MathCore::Gamma(-1*static_cast<double>(i),static_cast<double>(j)),1.,1e-12)
             <<"Gamma("<<-i<<","<<j<<") function doesn't return "<<1<<" ["<<__LINE__<<"]"<<std::endl;
     }
 
     for (int i = 1; i < 100; i++)
     for (int j = 0; j < 100; j++)
     {
-        EXPECT_NEAR(Func::Gamma(static_cast<double>(i),-1*static_cast<double>(j)),0.,1e-12)
+        EXPECT_NEAR(MathCore::Gamma(static_cast<double>(i),-1*static_cast<double>(j)),0.,1e-12)
             <<"Gamma("<<i<<","<<-j<<") function doesn't return "<<0<<" ["<<__LINE__<<"]"<<std::endl;
     }
 }

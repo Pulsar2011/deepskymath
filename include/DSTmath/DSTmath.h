@@ -61,22 +61,17 @@ namespace DST
         public:
         
             static double Pi();
+            static double Gamma(double, double);
+            static double Gamma(double);
         };
     
 #pragma mark - Func class definition
-        /**
-         *  @class Func DSTmath.h "DSTmath/DSTmath.h"
-         *  @brief Definition of basic math function
-         *  @details Func class define common mathematical functions.
-         */
-        class Func: public MathCore
-        {
-        public:
-            static double Gamma(double, double);
-            static double Gamma(double);
-    
-        };
         
+        /*!
+            *  @class polynom DSTmath.h "DSTmath/DSTmath.h"
+            *  @brief Definition of polynomial function
+            *  @details polynom class is a re-defintion of polynomial function required in other class from Math::namspace. Most of the function are re-implementation of Numerical Recipes functions.
+        */
         class polynom : public MathCore
         {
         protected:

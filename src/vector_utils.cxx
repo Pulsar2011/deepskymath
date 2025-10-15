@@ -52,21 +52,21 @@ namespace DST
       s += (*i);
     return s;
   }
-	
-	double vector_utils::weighted_sum ( const vector_t& v_, const vector_t& w_ )
-	{
-		if ( v_.size() != w_.size() )
-		{
-			std::cerr << "vector_utils::weighted_sum: WARNING: size are differents!" << std::endl;
-			return 0;
-		}
-		
-		double n = 0;
-		for ( unsigned int i = 0; i < v_.size(); i++ )
-			n += v_.at ( i ) * w_.at ( i );
-		
-		return n;
-	}
+    
+    double vector_utils::weighted_sum ( const vector_t& v_, const vector_t& w_ )
+    {
+        if ( v_.size() != w_.size() )
+        {
+            std::cerr << "vector_utils::weighted_sum: WARNING: size are differents!" << std::endl;
+            return 0;
+        }
+        
+        double n = 0;
+        for ( unsigned int i = 0; i < v_.size(); i++ )
+            n += v_.at ( i ) * w_.at ( i );
+        
+        return n;
+    }
 
   double
   vector_utils::sum_of_squared ( const vector_t& v_ )
@@ -203,7 +203,7 @@ namespace DST
   {
     if ( v_.size() != w_.size() )
       std::cerr << "vector_utils::covariance: WARNING: "
-		<< "size are differents!" << std::endl;
+        << "size are differents!" << std::endl;
 
     vector_t s;
     for ( size_t i = 0; i < v_.size(); i++ )
@@ -262,14 +262,14 @@ namespace DST
       std::sort(_v_.begin(), _v_.end());
       return _v_[_v_.size()-1];
   }
-	
+    
 
   vector_t
   vector_utils::lin_reg ( vector_t x_, vector_t y_, bool display_params_ )
   {
     if ( x_.size() != y_.size() )
       std::cerr << "vector_utils::lin_reg: WARNING: "
-		<< "size are differents!" << std::endl;
+        << "size are differents!" << std::endl;
 
     vector_t x2;
     vector_t xy;
@@ -277,8 +277,8 @@ namespace DST
 
     for ( size_t i = 0; i < x_.size(); i++ )
       {
-	x2.push_back ( x_.at(i) * x_.at(i) );
-	xy.push_back ( x_.at(i) * y_.at(i) );
+    x2.push_back ( x_.at(i) * x_.at(i) );
+    xy.push_back ( x_.at(i) * y_.at(i) );
       }
 
     double a = ( sum ( xy ) * double( x_.size() ) - sum ( y_ ) * sum ( x_ ) )
@@ -292,13 +292,13 @@ namespace DST
 
     for ( size_t i = 0; i < x_.size(); i++ )
       {
-	double d = fabs ( y_.at ( i ) - a * x_.at ( i ) - b );
-	S += d * d;
-	if ( y_.at ( i ) != 0. )
-	  {
-	    chi = d / sqrt ( fabs ( y_.at ( i ) ) ); // suppose a gaussian error
-	    chi2 += chi * chi;
-	  }
+    double d = fabs ( y_.at ( i ) - a * x_.at ( i ) - b );
+    S += d * d;
+    if ( y_.at ( i ) != 0. )
+      {
+        chi = d / sqrt ( fabs ( y_.at ( i ) ) ); // suppose a gaussian error
+        chi2 += chi * chi;
+      }
       }
     double reduced_chi2 = chi2 / ( x_.size() - 2. );
 
@@ -310,24 +310,24 @@ namespace DST
 
     if ( display_params_ )
       {
-	vector_t y_th;
-	for ( vector_t::iterator i = x_.begin(); i != x_.end(); i++ )
-	  y_th.push_back ( a * (*i) + b );
-	
-	double cov      = covariance ( y_, y_th );
-	double var_y    = variance2  ( y_ );
-	double var_y_th = variance2  ( y_th );
-	double correlation_factor = cov / ( sqrt ( var_y ) * sqrt ( var_y_th ) );
+    vector_t y_th;
+    for ( vector_t::iterator i = x_.begin(); i != x_.end(); i++ )
+      y_th.push_back ( a * (*i) + b );
     
-	std::cerr << "vector_utils::lin_reg: NOTICE: y = a * x + b" << std::endl
-		  << "|   |-- a     = " << a << std::endl
-		  << "|   |-- b     = " << b << std::endl
-		  << "|   |-- r2    = " << correlation_factor * correlation_factor << std::endl
-		  << "|   `-- sumsq = " << S << std::endl;
-	std::cerr << "|-- cov ( y, y_yh ) = " << cov << std::endl;
-	std::cerr << "|-- sigma_y         = " << sqrt ( var_y ) << std::endl;
-	std::cerr << "|-- sigma_y_th      = " << sqrt ( var_y_th ) << std::endl;
-	std::cerr << "`-- rho             = " << correlation_factor << std::endl;
+    double cov      = covariance ( y_, y_th );
+    double var_y    = variance2  ( y_ );
+    double var_y_th = variance2  ( y_th );
+    double correlation_factor = cov / ( sqrt ( var_y ) * sqrt ( var_y_th ) );
+    
+    std::cerr << "vector_utils::lin_reg: NOTICE: y = a * x + b" << std::endl
+          << "|   |-- a     = " << a << std::endl
+          << "|   |-- b     = " << b << std::endl
+          << "|   |-- r2    = " << correlation_factor * correlation_factor << std::endl
+          << "|   `-- sumsq = " << S << std::endl;
+    std::cerr << "|-- cov ( y, y_yh ) = " << cov << std::endl;
+    std::cerr << "|-- sigma_y         = " << sqrt ( var_y ) << std::endl;
+    std::cerr << "|-- sigma_y_th      = " << sqrt ( var_y_th ) << std::endl;
+    std::cerr << "`-- rho             = " << correlation_factor << std::endl;
       }
 
     return params;
@@ -429,13 +429,13 @@ namespace DST
         return params;
     }
 
-	
+    
   vector_t
   vector_utils::zero_lin_reg ( vector_t x_, vector_t y_, bool display_params_ )
   {
     if ( x_.size() != y_.size() )
       std::cerr << "vector_utils::lin_reg: WARNING: "
-		<< "size are differents!" << std::endl;
+        << "size are differents!" << std::endl;
 
     vector_t params;
 
@@ -445,8 +445,8 @@ namespace DST
     double S = 0.;
     for ( size_t i = 0; i < x_.size(); i++ )
       {
-	double d = y_.at ( i ) - a * x_.at ( i ) - b;
-	S += d * d;	  
+    double d = y_.at ( i ) - a * x_.at ( i ) - b;
+    S += d * d;      
       }
 
     params.push_back ( a );
@@ -455,24 +455,24 @@ namespace DST
 
     if ( display_params_ )
       {
-	vector_t y_th;
-	for ( vector_t::iterator i = x_.begin(); i != x_.end(); i++ )
-	  y_th.push_back ( a * (*i) + b );
-	
-	double cov      = covariance ( y_, y_th );
-	double var_y    = variance2  ( y_ );
-	double var_y_th = variance2  ( y_th );
-	double correlation_factor = cov / ( sqrt ( var_y ) * sqrt ( var_y_th ) );
+    vector_t y_th;
+    for ( vector_t::iterator i = x_.begin(); i != x_.end(); i++ )
+      y_th.push_back ( a * (*i) + b );
     
-	std::cerr << "vector_utils::lin_reg: NOTICE: y = a * x + b" << std::endl
-		  << "|   |-- a     = " << a << std::endl
-		  << "|   |-- b     = " << b << std::endl
-		  << "|   |-- r2    = " << correlation_factor * correlation_factor << std::endl
-		  << "|   `-- sumsq = " << S << std::endl;
-	std::cerr << "|-- cov ( y, y_yh ) = " << cov << std::endl;
-	std::cerr << "|-- sigma_y         = " << sqrt ( var_y ) << std::endl;
-	std::cerr << "|-- sigma_y_th      = " << sqrt ( var_y_th ) << std::endl;
-	std::cerr << "`-- rho             = " << correlation_factor << std::endl;
+    double cov      = covariance ( y_, y_th );
+    double var_y    = variance2  ( y_ );
+    double var_y_th = variance2  ( y_th );
+    double correlation_factor = cov / ( sqrt ( var_y ) * sqrt ( var_y_th ) );
+    
+    std::cerr << "vector_utils::lin_reg: NOTICE: y = a * x + b" << std::endl
+          << "|   |-- a     = " << a << std::endl
+          << "|   |-- b     = " << b << std::endl
+          << "|   |-- r2    = " << correlation_factor * correlation_factor << std::endl
+          << "|   `-- sumsq = " << S << std::endl;
+    std::cerr << "|-- cov ( y, y_yh ) = " << cov << std::endl;
+    std::cerr << "|-- sigma_y         = " << sqrt ( var_y ) << std::endl;
+    std::cerr << "|-- sigma_y_th      = " << sqrt ( var_y_th ) << std::endl;
+    std::cerr << "`-- rho             = " << correlation_factor << std::endl;
       }
 
     return params;
@@ -492,8 +492,8 @@ namespace DST
     int a = 0;
     for ( vector_t::const_iterator i = v_.begin(); i != v_.end(); i++ )
       {
-	if ( int ( x_ + 0.5 ) == int ( (*i) + 0.5 ) )
-	  a++;
+    if ( int ( x_ + 0.5 ) == int ( (*i) + 0.5 ) )
+      a++;
       }
     return a;
   }
@@ -509,96 +509,96 @@ namespace DST
     oss << "]";
     /*
     std::cerr << "vector_utils::to_char: DEBUG: "
-	      << oss.str() << std::endl;
+          << oss.str() << std::endl;
     */
     return oss.str();
   }
-	
+    
   vector_t vector_utils::multiply (const void * _v_, ...)
  {
-	 const vector_t *arg = static_cast<const vector_t*>( _v_ );
-	 
-	 vector_t out;
-	 
-	 va_list argptr;
-	 va_start(argptr,_v_);
-	 
-	 while(arg != NULL)
-	 {
-		 if(arg->size() > 1)
-		 {
-			 if(out.size() < 1)
-				 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
-					 out.push_back(arg->at(iv));
-			 else
-				 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
-					 out[iv] *= arg->at(iv);
-		 }
-		 arg = va_arg(argptr, const vector_t *);
-	 }
-	 
-	 va_end(argptr);
-	
-	 return out;
+     const vector_t *arg = static_cast<const vector_t*>( _v_ );
+     
+     vector_t out;
+     
+     va_list argptr;
+     va_start(argptr,_v_);
+     
+     while(arg != NULL)
+     {
+         if(arg->size() > 1)
+         {
+             if(out.size() < 1)
+                 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
+                     out.push_back(arg->at(iv));
+             else
+                 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
+                     out[iv] *= arg->at(iv);
+         }
+         arg = va_arg(argptr, const vector_t *);
+     }
+     
+     va_end(argptr);
+    
+     return out;
 
  }
-	
-	vector_t vector_utils::divide (void * _v_, ...)
+    
+    vector_t vector_utils::divide (void * _v_, ...)
  {
-	 vector_t *arg = static_cast<vector_t*>( _v_ );
-	 
-	 vector_t out;
-	 
-	 va_list argptr;
-	 va_start(argptr,_v_);
-	 
-	 while(arg != NULL)
-	 {
-		 if(arg->size() > 1)
-		 {
-			 if(out.size() < 1)
-				 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
-					 out.push_back(arg->at(iv));
-			 else
-				 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
-					 out[iv] /= arg->at(iv);
-		 }
-		 arg = va_arg(argptr, vector_t *);
-	 }
-	 
-	 va_end(argptr);
-	 
-	 return out;
-	 
+     vector_t *arg = static_cast<vector_t*>( _v_ );
+     
+     vector_t out;
+     
+     va_list argptr;
+     va_start(argptr,_v_);
+     
+     while(arg != NULL)
+     {
+         if(arg->size() > 1)
+         {
+             if(out.size() < 1)
+                 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
+                     out.push_back(arg->at(iv));
+             else
+                 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
+                     out[iv] /= arg->at(iv);
+         }
+         arg = va_arg(argptr, vector_t *);
+     }
+     
+     va_end(argptr);
+     
+     return out;
+     
  }
-	
-	vector_t vector_utils::add (void * _v_, ...)
+    
+    vector_t vector_utils::add (void * _v_, ...)
  {
-	 vector_t *arg = static_cast<vector_t*>( _v_ );
-	 
-	 vector_t out;
-	 
-	 va_list argptr;
-	 va_start(argptr,_v_);
-	 
-	 while(arg != NULL)
-	 {
-		 if(arg->size() > 1)
-		 {
-			 if(out.size() < 1)
-				 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
-					 out.push_back(arg->at(iv));
-			 else
-				 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
-					 out[iv] += arg->at(iv);
-		 }
-		 arg = va_arg(argptr, vector_t *);
-	 }
-	 
-	 va_end(argptr);
-	 
-	 return out;
-	 
+     vector_t *arg = static_cast<vector_t*>( _v_ );
+     
+     vector_t out;
+     
+     va_list argptr;
+     va_start(argptr,_v_);
+     
+     while(arg != NULL)
+     {
+         if(arg->size() > 1)
+         {
+             if(out.size() < 1)
+                 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
+                     out.push_back(arg->at(iv));
+             else
+                 for(unsigned int iv = 0 ; iv < arg->size(); iv++)
+                     out[iv] += arg->at(iv);
+         }
+         arg = va_arg(argptr, vector_t *);
+     }
+     
+     va_end(argptr);
+     
+     return out;
+     
  }
 
   void
@@ -606,9 +606,9 @@ namespace DST
   {
     for ( vector_t::iterator i = v_.begin(); i != v_.end(); i++ )
       if ( (*i) == 0 || (*i) == -0 )
-	out_ << "0\t";
+    out_ << "0\t";
       else
-	out_ << (*i) << "\t";
+    out_ << (*i) << "\t";
   }
 
   void

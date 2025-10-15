@@ -37,7 +37,7 @@ TEST(points, ctor)
     double u = unid(re);
     double v = unid(re);
     
-    point p3 = point(1,x);
+    point p3 = point({x});
     EXPECT_EQ(p3.size(), 1);
     EXPECT_NEAR(p3[0], x, point::precision);
 
@@ -45,7 +45,7 @@ TEST(points, ctor)
     EXPECT_EQ(cp3.size(), 1);
     EXPECT_NEAR(cp3[0], x, point::precision);
 
-    point p4 = point(2,x,y);
+    point p4 = point({x,y});
     EXPECT_EQ(p4.size(), 2);
     EXPECT_NEAR(p4[0], x, point::precision);
     EXPECT_NEAR(p4[1], y, point::precision);
@@ -55,7 +55,7 @@ TEST(points, ctor)
     EXPECT_NEAR(cp4[0], x, point::precision);
     EXPECT_NEAR(cp4[1], y, point::precision);
 
-    point p5 = point(3,x,y,z);
+    point p5 = point({x,y,z});
     EXPECT_EQ(p5.size(), 3);
     EXPECT_NEAR(p5[0], x, point::precision);
     EXPECT_NEAR(p5[1], y, point::precision);
@@ -67,7 +67,7 @@ TEST(points, ctor)
     EXPECT_NEAR(cp5[1], y, point::precision);
     EXPECT_NEAR(cp5[2], z, point::precision);
 
-    point p6 = point(4,x,y,z,t);
+    point p6 = point({x,y,z,t});
     EXPECT_EQ(p6.size(), 4);
     EXPECT_NEAR(p6[0], x, point::precision);
     EXPECT_NEAR(p6[1], y, point::precision);
@@ -81,7 +81,7 @@ TEST(points, ctor)
     EXPECT_NEAR(cp6[2], z, point::precision);
     EXPECT_NEAR(cp6[3], t, point::precision);
 
-    point p7 = point(5,x,y,z,t,u);
+    point p7 = point({x,y,z,t,u});
     EXPECT_EQ(p7.size(), 5);
     EXPECT_NEAR(p7[0], x, point::precision);
     EXPECT_NEAR(p7[1], y, point::precision);
@@ -97,7 +97,7 @@ TEST(points, ctor)
     EXPECT_NEAR(cp7[3], t, point::precision);
     EXPECT_NEAR(cp7[4], u, point::precision);
 
-    point p8 = point(6,x,y,z,t,u,v);
+    point p8 = point({x,y,z,t,u,v});
     EXPECT_EQ(p8.size(), 6);
     EXPECT_NEAR(p8[0], x, point::precision);
     EXPECT_NEAR(p8[1], y, point::precision);
@@ -115,7 +115,7 @@ TEST(points, ctor)
     EXPECT_NEAR(cp8[4], u, point::precision);
     EXPECT_NEAR(cp8[5], v, point::precision);
 
-    point p10 = point(3,0.,0.,0.);
+    point p10 = point({0.,0.,0.});
     EXPECT_EQ(p10.size(), 3);
     EXPECT_NEAR(p10[0], 0., point::precision);
     EXPECT_NEAR(p10[1], 0., point::precision);
@@ -706,7 +706,7 @@ TEST(vector2D, ctor)
         p = (atan2(y1,x1)>=0)?atan2(y1,x1):2.*acos(-1) + atan2(y1,x1);
         l = sqrt(x1*x1 + y1*y1);
 
-        vector2D vxy1 = vector2D(point(2,x1,y1));
+        vector2D vxy1 = vector2D(point({x1,y1}));
         EXPECT_NEAR(vxy1.Phi(),    p, point::precision);
         EXPECT_NEAR(vxy1.Length(), l, point::precision);
         EXPECT_NEAR(vxy1.X(),     x1, point::precision);
@@ -718,14 +718,14 @@ TEST(vector2D, ctor)
         p = (atan2(y2-y1,x2-x1)>=0)?atan2(y2-y1,x2-x1):2.*acos(-1) + atan2(y2-y1,x2-x1);
         l = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
 
-        vector2D vxy2 = vector2D(point(2,x1,y1),point(2,x2,y2));
+        vector2D vxy2 = vector2D(point({x1,y1}),point({x2,y2}));
         EXPECT_NEAR(vxy2.Phi(), p, point::precision);
         EXPECT_NEAR(vxy2.Length(), l, point::precision);
         EXPECT_NEAR(vxy2.X(), x2-x1, point::precision);
         EXPECT_NEAR(vxy2.Y(), y2-y1, point::precision);   
         EXPECT_NEAR(vxy2.Z(), 0, point::precision);
 
-        vector2D vxy3 = vector2D(point(2,x2,y2),point(2,x1,y1));
+        vector2D vxy3 = vector2D(point({x2,y2}),point({x1,y1}));
         p = (atan2(y1-y2,x1-x2)>=0)?atan2(y1-y2,x1-x2):2.*acos(-1) + atan2(y1-y2,x1-x2);
         l = sqrt((x2-x1)*(x2-x1) + (y2-y1)*(y2-y1));
         EXPECT_NEAR(vxy3.Phi(), p, point::precision);
@@ -746,10 +746,10 @@ TEST(vector2D,exception)
     double x2= unid(re);
     double y2= unid(re);
 
-    EXPECT_ANY_THROW(vector2D(point(1,x1)));
-    EXPECT_ANY_THROW(vector2D(point(1,x1),point(1,x2)));
-    EXPECT_ANY_THROW(vector2D(point(2,x1,y1),point(1,x2)));
-    EXPECT_ANY_THROW(vector2D(point(1,x1),point(2,x2,y2)));
+    EXPECT_ANY_THROW(vector2D(point({x1})));
+    EXPECT_ANY_THROW(vector2D(point({x1}),point({x2})));
+    EXPECT_ANY_THROW(vector2D(point({x1,y1}),point({x2})));
+    EXPECT_ANY_THROW(vector2D(point({x1}),point({x2,y2})));
 }
 
 TEST(vector2D,modifier)
@@ -998,7 +998,7 @@ TEST(vector3D, ctor)
         double y=std::abs(l)*sin(theta)*sin(phi);
         double z=std::abs(l)*cos(theta);
         
-        vector3D v3 = vector3D(point(3,x,y,z));
+        vector3D v3 = vector3D(point({x,y,z}));
         EXPECT_NEAR(v3.Length(), sqrt(x*x + y*y + z*z), point::precision);
         EXPECT_NEAR(v3.Phi(), (atan2(y,x)>=0)?atan2(y,x):2*acos(-1)+atan2(y,x), point::precision);
         EXPECT_NEAR(v3.Theta(), theta, point::precision);
@@ -1025,12 +1025,12 @@ TEST(vector3D,exception)
     double a_y= unid(re);
     double a_z= unid(re);
 
-    point pa_1(1,a_x);
-    point pa_2(2,a_x,a_y);
-    point pa_3(3,a_x,a_y,a_z);
+    point pa_1({a_x});
+    point pa_2({a_x,a_y});
+    point pa_3({a_x,a_y,a_z});
 
-    EXPECT_ANY_THROW(vector3D(point(1,a_x)));
-    EXPECT_ANY_THROW(vector3D(point(2,a_x,a_y)));
+    EXPECT_ANY_THROW(vector3D(point({a_x})));
+    EXPECT_ANY_THROW(vector3D(point({a_x,a_y})));
 
     EXPECT_ANY_THROW(vector3D(pa_1,pa_1));
     EXPECT_ANY_THROW(vector3D(pa_1,pa_2));

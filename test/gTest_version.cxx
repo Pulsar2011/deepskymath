@@ -17,9 +17,16 @@ namespace DSM
     {
         gGIT::version();
         std::vector<int16_t> ver = gGIT::this_ver->getVersion();
+        std::string ver_str="";
+        
+        for(std::vector<int16_t>::const_iterator i=ver.cbegin(); i!=ver.cend(); i++)
+            ver_str += std::to_string(*i) + (i+1!=ver.cend()?std::string("."):std::string(""));
 
         ASSERT_EQ(ver.size(), 3);
-        ASSERT_EQ(gGIT::isEqual(std::string("v")+std::to_string(ver[0])+std::string(".")+std::to_string(ver[1]) +std::string(".")+std::to_string(ver[2])+std::string("-")+this_VERSION_SHA1), true)<<std::string("v")+std::to_string(ver[0])+std::string(".")+std::to_string(ver[1]) +std::string(".")+std::to_string(ver[2])+std::string("-")+this_VERSION_SHA1<<" vs "<<DSM::gGIT::this_ver->version;
+
+        ASSERT_EQ(ver[0], std::stoi(this_VERSION_MAJOR));
+        ASSERT_EQ(ver[1], std::stoi(this_VERSION_MINOR));
+        ASSERT_EQ(ver[2], std::stoi(this_VERSION_PATCH));
     }
 
     TEST(version_Tester, test_readVersion)
@@ -28,7 +35,9 @@ namespace DSM
         std::vector<int16_t> ver = gGIT::this_ver->readVersion(this_VERSION_SHORT);
 
         ASSERT_EQ(ver.size(), 3);
-        ASSERT_EQ(gGIT::isEqual(std::string("v")+std::to_string(ver[0])+std::string(".")+std::to_string(ver[1]) +std::string(".")+std::to_string(ver[2])+std::string("-")+this_VERSION_SHA1), true);
+        ASSERT_EQ(ver[0], std::stoi(this_VERSION_MAJOR));
+        ASSERT_EQ(ver[1], std::stoi(this_VERSION_MINOR));
+        ASSERT_EQ(ver[2], std::stoi(this_VERSION_PATCH));
     }
 
     TEST(version_Tester, test_private)
@@ -153,7 +162,7 @@ TEST(test_version, version_equal)
 {
 
     std::string ver=gGIT::version();
-    ASSERT_EQ(!ver.compare(this_VERSION), true);
+    ASSERT_EQ(!ver.compare(this_VERSION), true)<< ver <<" vs "<< this_VERSION;
     ASSERT_EQ(gGIT::isEqual(ver), true);
     ASSERT_EQ(gGIT::isEqual(this_VERSION), true);
 
