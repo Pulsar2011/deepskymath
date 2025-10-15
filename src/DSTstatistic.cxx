@@ -13,94 +13,39 @@
 #include <limits>
 #include <chrono>
 #include <DSTmath/DSTstatistic.h>
+#include <DSTmath/DSTmath.h>
+
+#define _PI_ DST::Math::MathCore::Pi()
 
 namespace DST
 {
     namespace Math
     {
-	double get_normale_distribution ( double m_, double s_ )
-	{
-		double x1, x2, y;
-		x1 = drand48();
-		x2 = drand48();
-		
-		// Boc-Muller method
-		y = sqrt ( -2 * log ( x1 ) ) * cos ( 2. * M_PI * x2 );
-		return m_ + s_ * y;
-	}
-	
-	double get_poisson_distribution ( double l_ )
-	{
-		int k = 10. * drand48();
-		int f = 1;
-		for ( int i = 1; i <= k; i++ )
-			f *= i;
-		
-		return exp ( - l_ ) * pow ( l_, k ) / f;
-	}
-        
-#if __cplusplus >= 201103L
-        
-        template<>
-        double get_uniform_distribution<double>( double i_, double f_ )
-        {
-            double rndNum;
-            static int seed = 0;
-            
-            static std::mt19937_64 rndgen;
-            
-            if(seed == 0)
-            {
-                seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-                rndgen = std::mt19937_64(seed);
-            }
-            
-            std::uniform_real_distribution<double> dis = std::uniform_real_distribution<double>(i_, f_);
-            rndNum = dis(rndgen);
-            
-            return rndNum;
-        }
-        
-        template<>
-        float get_uniform_distribution<float>( float i_, float f_ )
-        {
-            float rndNum;
-            static int seed = 0;
-            
-            static std::mt19937_64 rndgen;
-            
-            if(seed == 0)
-            {
-                seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-                rndgen = std::mt19937_64(seed);
-            }
-            
-            std::uniform_real_distribution<float> dis = std::uniform_real_distribution<float>(i_, f_);
-            rndNum = dis(rndgen);
-            
-            return rndNum;
-        }
-        
-        template<>
-        long double get_uniform_distribution<long double>( long double i_, long double f_ )
-        {
-            long double rndNum;
-            static int seed = 0;
-            
-            static std::mt19937_64 rndgen;
-            
-            if(seed == 0)
-            {
-                seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-                rndgen = std::mt19937_64(seed);
-            }
-            
-            std::uniform_real_distribution<long double> dis = std::uniform_real_distribution<long double>(i_, f_);
-            rndNum = dis(rndgen);
-            
-            return rndNum;
-        }
-#endif
+
+	    double sample_normal_distribution ( double m_, double s_ )
+	    {
+            if(s_ <= 0)
+                 throw std::invalid_argument("\033[43;31m[DST::Math::sample_normal_distribution] Standard deviation \033[43;31m MUST \033[43;31m be strictly positive.\033[31m");
+	    	
+            static thread_local std::mt19937_64 rng(static_cast<uint64_t>(std::chrono::high_resolution_clock::now().time_since_epoch().count()));
+            std::uniform_real_distribution<double> U(0.0, 1.0);
+
+            double x1 = U(rng);
+            while(x1 <= 0.0)
+                x1 = U(rng);
+
+            const double x2 = U(rng);
+
+	    	// Boc-Muller method
+	    	const double y = sqrt ( -2 * std::log ( x1 ) ) * std::cos ( 2. * _PI_ * x2 );
+	    	return m_ + s_ * y;
+	    }
+    
+
+	    double sample_poisson_distribution ( double l_ )
+	    {            
+            return static_cast<double>(sample_poisson_distribution<uint64_t>(l_));
+	    }
 
 	
 #pragma mark -
@@ -236,16 +181,10 @@ namespace DST
 		isNormalized = false;
 		
 		Uinit();
-
-#if __cplusplus >= 199711L
 		// obtain a seed from the timer
 		seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
 		
         rndgen = std::mt19937_64(seed);
-#else
-		seed = time(NULL);
-		srand(seed);
-#endif
 
 	}
 	
@@ -262,12 +201,8 @@ namespace DST
 		
 		//--- CHOOSE INITIAL VALUE FOR THE RANDOM GENERATOR.
  
-#if __cplusplus >= 199711L
 		std::uniform_real_distribution<double>dis(upEdge, lowEdge);
 		xSlice = dis(rndgen);
-#else
-        xSlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND *( upEdge - lowEdge ) + lowEdge;
-#endif
 		
 		Usetup();
 	}
@@ -322,64 +257,51 @@ namespace DST
 			return lowEdge-1;
         
         //- RANDOMLY PICK A SLICE IN Y
-#if __cplusplus >= 199711L
         std::uniform_real_distribution<double> ydis(0, eval(xSlice));
         ySlice = ydis(rndgen);
         while(ySlice >= fmax) ySlice = ydis(rndgen);
-#else
-        ySlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND * eval( xSlice );
-        while(ySlice >= fmax)
-	  ySlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*eval( xSlice );
-#endif
     
 		//- FIND X BOUNDARY FOR THE Y SLICE
-	double min, max;
-	weight::const_iterator ik = fpdf.begin();
-        while(ik->second < ySlice && ik != fpdf.end()) ik++;
-	min = fval.find(ik->first)->second;
-		
-	ik = fpdf.end();
-	ik--;
-	while(ik->second < ySlice && ik != fpdf.begin()) ik--;
-	max = fval.find(ik->first)->second;
-		
-	lowSlice = (min <= max)?min:max;
-	upSlice  = (max >= min)?max:min;
+	    double min, max;
+	    weight::const_iterator ik = fpdf.begin();
+            while(ik->second < ySlice && ik != fpdf.end()) ik++;
+	    min = fval.find(ik->first)->second;
+        
+	    ik = fpdf.end();
+	    ik--;
+	    while(ik->second < ySlice && ik != fpdf.begin()) ik--;
+	    max = fval.find(ik->first)->second;
+        
+	    lowSlice = (min <= max)?min:max;
+	    upSlice  = (max >= min)?max:min;
 
-	if(upSlice == lowSlice)
-	  {
-	    double step = (upSlice - lowSlice)/100.;
-	    upSlice     += step;
-	    lowSlice    -= step;
-	  }
+	    if(upSlice == lowSlice)
+	    {
+	        double step = (upSlice - lowSlice)/100.;
+	        upSlice     += step;
+	        lowSlice    -= step;
+	    }
 		
 		//- RANDOMLY PICK A X WITHIN THE SLICE BOUNDARY
         double xgen;
-        
-#if __cplusplus >= 199711L
         std::uniform_real_distribution<double> xdis(lowSlice, upSlice);
         xgen = xdis(rndgen);
         while(eval(xgen) < ySlice)	xgen = xdis(rndgen);
-#else
-        xgen = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*( upSlice - lowSlice ) + lowSlice;
-        while(eval(xgen) < ySlice)
-	  xgen = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*( upSlice - lowSlice ) + lowSlice;
-#endif
 		
 		xSlice = xgen;
 		
 		return xSlice;
 	}
 	
-	/**
-	 *  @brief Generate random number based on the PDF.
-	 *  @details Markov-Chain Monte-Carlo slice sampling algorithm is used to sample the pdf and randomly generate a number according to the probability. Futhermore, in order to allow rare event to occurs, an important sampling is combined to the slice sampling algortim to artificially increase probability of the tails of the distribution.
-	 *  @return A random number.
-	 */
-	double binned_pdf::operator()(void)
-	{
-		return gen();
-	}
+	    /**
+	     *  @brief Generate random number based on the PDF.
+	     *  @details Markov-Chain Monte-Carlo slice sampling algorithm is used to sample the pdf and randomly generate a number according to the probability.   Futhermore, in order to allow rare event to occurs, an important sampling is combined to the slice sampling algortim to artificially increase probability     of the tails of the distribution.
+	     *  @return A random number.
+	     */
+	    double binned_pdf::operator()(void)
+	    {
+	    	return gen();
+	    }
 
 #pragma mark -- PDF Evaluation
 	/**
@@ -1152,15 +1074,10 @@ namespace DST
             
             Uinit();
             
-#if __cplusplus >= 199711L
             // obtain a seed from the timer
             seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
             
             rndgen = std::mt19937_64(seed);
-#else
-            seed = time(NULL);
-            srand(seed);
-#endif
             
         }
         
@@ -1226,16 +1143,11 @@ namespace DST
             
             //--- CHOOSE INITIAL VALUE FOR THE RANDOM GENERATOR.
             
-#if __cplusplus >= 199711L
             std::uniform_real_distribution<double>xdis(x_upEdge, x_lowEdge);
             xSlice = xdis(rndgen);
             
             std::uniform_real_distribution<double>ydis(y_upEdge, y_lowEdge);
             ySlice = ydis(rndgen);
-#else
-            xSlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND *( x_upEdge - x_lowEdge ) + x_lowEdge;
-            ySlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND *( y_upEdge - y_lowEdge ) + y_lowEdge;
-#endif
             
             Usetup();
         }
@@ -1315,35 +1227,19 @@ namespace DST
             rand_gen.clear();
             
             //- RANDOMLY PICK A SLICE IN Y
-#if __cplusplus >= 199711L
             std::uniform_real_distribution<double> zdis(0, eval(xSlice, ySlice));
             zSlice = zdis(rndgen);
             while(zSlice >= fmax) zSlice = zdis(rndgen);
-#else
-            zSlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND * eval( xSlice, ySlice );
-            while(zSlice >= fmax)
-                zSlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*eval( xSlice, ySlice );
-#endif
             
             
             //- RANDOMLY PICK A X WITHIN THE SLICE BOUNDARY
             double xgen, ygen;
             
-#if __cplusplus >= 199711L
             std::uniform_real_distribution<double> xdis(x_lowEdge, x_upEdge);
             std::uniform_real_distribution<double> ydis(y_lowEdge, y_upEdge);
             xgen = xdis(rndgen);
             ygen = ydis(rndgen);
             while(eval(xgen, ygen) < zSlice)	{xgen = xdis(rndgen); ygen = ydis(rndgen);}
-#else
-            xgen = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*( x_upEdge - x_lowEdge ) + x_lowEdge;
-            ygen = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*( y_upEdge - y_lowEdge ) + y_lowEdge;
-            while(eval(xgen, ygen) < zSlice)
-            {
-                xgen = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*( x_upEdge - x_lowEdge ) + x_lowEdge;
-                ygen = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*( y_upEdge - y_lowEdge ) + y_lowEdge;
-            }
-#endif
             
             xSlice = xgen;
             ySlice = ygen;
@@ -2296,14 +2192,9 @@ namespace DST
 		xSlice = std::numeric_limits<double>::min();
 		ySlice = std::numeric_limits<double>::min();
 		
-#if __cplusplus >= 199711L
 		// obtain a seed from the timer
 		seed = std::chrono::high_resolution_clock::now().time_since_epoch().count();
-	        rndgen = std::mt19937_64(seed);
-#else
-		seed = time(NULL);
-		srand(seed);
-#endif
+	    rndgen = std::mt19937_64(seed);
 	}
 	
     void pdf::add_pdf(pdf_function ptr, pdf_param p)
@@ -2352,39 +2243,26 @@ namespace DST
         
 	double pdf::operator()(void)
 	{
-		
+		if(fpdf.size() == 0)
+            return 0;
+            
 		if(pdf_upEdge <= pdf_lowEdge)
 			setRange(pdf_upEdge, pdf_lowEdge);
         
-#if __cplusplus >= 199711L
         std::uniform_real_distribution<double> xdis(pdf_lowEdge, pdf_upEdge);
-#endif
+
 		
 		if( fabs(xSlice) <= std::numeric_limits<double>::min() )
 		{
-#if __cplusplus >= 199711L
 			xSlice = xdis(rndgen);
-#else
-			xSlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*(pdf_upEdge - pdf_lowEdge) + pdf_lowEdge;
-#endif
 		}
 		
-#if __cplusplus >= 199711L
 		std::uniform_real_distribution<double> ydis(0, (*this)(xSlice));
 		ySlice = ydis(rndgen);
-#else
-		ySlice = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*((*this)(xSlice));
-#endif
 
-#if __cplusplus >= 199711L
 		double xgen = xdis(rndgen);
 		while((*this)(xgen) < ySlice || (*this)(xgen) <= 0)
 			xgen = xdis(rndgen);
-#else
-		double xgen = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*(pdf_upEdge - pdf_lowEdge) + pdf_lowEdge;
-        while((*this)(xgen) < ySlice)
-	  xgen = static_cast<double>( rand() % MOD_RAND )/DMOD_RAND*(pdf_upEdge - pdf_lowEdge) + pdf_lowEdge;
-#endif
 		
 		xSlice = xgen;
 		
