@@ -11,12 +11,8 @@
 
 #include <iostream>
 #include <limits>
-#if __cplusplus >= 201103L
 #include <chrono>
-#else
-#include <ctime>
-#endif
-#include <DSTmath/template_utils.h>
+#include <DSTmath/DSTstatistic.h>
 
 namespace DST
 {

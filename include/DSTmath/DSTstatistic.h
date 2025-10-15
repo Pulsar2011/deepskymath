@@ -20,13 +20,7 @@
 #include <chrono>
 #include <stdexcept>
 #include <string>
-
-#if __cplusplus >= 199711L
 #include <random>
-#else
-#include <cstdlib>
-#include <ctime>
-#endif
 
 
 typedef std::map<int,double> value; ///< ! Probability distribution function : a set of variable x with their associated probability
