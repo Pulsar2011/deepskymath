@@ -2269,7 +2269,7 @@ namespace DST
 
 #pragma region - pdf class implementation
 #pragma region -- Contructor/Destriuctor
-        pdf::pdf ()
+        pdf::pdf (const std::string n):name(n)
         {
             //fmax = std::numeric_limits<double>::min();
             pdf_norme = 1;
@@ -2315,12 +2315,17 @@ namespace DST
         */
         void pdf::Normalize(size_t nStep)
         {
-            if(pdf_lowEdge == pdf_upEdge)
+            if(pdf_lowEdge >= pdf_upEdge)
             {
-                throw std::invalid_argument("\033[31m[pdf::setNorm]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating normalization.\033[0m\n");
+                throw std::runtime_error("\033[31m[pdf::setNorm]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating normalization.\033[0m\n");
             }
 
-            pdf_norme = 1./getIntegral(nStep);
+            if(nStep < 1)
+            {
+                throw std::invalid_argument("\033[31m[pdf::setNorm]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The number of step to compute the normalization must be larger than 0.\033[0m\n");
+            }
+
+            pdf_norme /= getIntegral(nStep);
         }
 
         /**
@@ -2334,9 +2339,19 @@ namespace DST
          */
         double pdf::getIntegral(const double& a, const double& b, size_t nStep) const
         {
+            if(pdf_lowEdge >= pdf_upEdge)
+            {
+                throw std::runtime_error("\033[31m[pdf::setNorm]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating normalization.\033[0m\n");
+            }
+
             if(a >= b || a < pdf_lowEdge || b > pdf_upEdge)
             {
-                throw std::invalid_argument("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the integral.\033[0m\n");
+                throw std::invalid_argument("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     Invalid range.\033[0m\n");
+            }
+
+            if(nStep < 1)
+            {
+                throw std::invalid_argument("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The number of step to compute the integral must be larger than 0.\033[0m\n");
             }
 
             double integral = (*this)(a)/2. + (*this)(b)/2.;
@@ -2366,7 +2381,12 @@ namespace DST
         {
             if(pdf_lowEdge >= pdf_upEdge)
             {
-                throw std::invalid_argument("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the integral.\033[0m\n");
+                throw std::runtime_error("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the integral.\033[0m\n");
+            }
+
+            if(nStep < 1)
+            {
+                throw std::invalid_argument("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The number of step to compute the integral must be larger than 0.\033[0m\n");
             }
 
             double min = -1;
@@ -2480,6 +2500,19 @@ namespace DST
             return best_x;
         }
 
+        /**
+         * @brief Evaluate the cumulative distribution function (CDF) of the PDF
+         * @details Evaluate the cumulative distribution function (CDF) of the PDF using the getIntegral method to compute iteratively the integral of the PDF from \c pdf_lowEdge to  \f$x_i\f$ with \f$x_i\f$ ranging from \c pdf_lowEdge + \f$dx\f$ to \c pdf_upEdge where \f$dx =\f$ ( \c pdf_upEdge - \c pdf_lowEdge )/( \c nBins - 1 ).
+         * \f[
+            CDF(x_i) = \frac{\int_{\text{pdf}\_{\text{lowEdge}}^{x_i} pdf(x) dx}{\int_{\text{pdf}\_{\text{lowEdge}}^{\text{pdf}\_{\text{upEdge}} pdf(x) dx}
+         \f]
+         * 
+         * @param nBins Number of bins used to sample the CDF
+         * @param nStep Precision steps required to estimate the integral at each bin. The larger the better at cost of longer computation time. Default value is \c nStep = 1000.
+         * @return vector of pairs \f$(x_i, CDF(x_i))\f$ where \f$x_i\f$ is the upper limit of the integral bin and  \f$CDF(x_i)\f$ the value of the CDF up t0 that bin position.
+         * @note CDF normalization is computed from \c pdf_lowEdge to \c pdf_upEdge hence, when rang of the pdf is limited, the CDF will may note be representative  of the true CDF of pdf extending from \f$-infty\f$ to \f$+infty\f$ but instead will be representativ of the probability sample are drawn from the availble range.
+         * @note This methods is given as default way to comput CDF of the PDF. For better accuracy, it is recommanded to overwrite this method with provision of an analytical CDF of the PDF when it is know.
+         */
         cdf_t pdf::cdf(const size_t& nBins, size_t nStep) const
         {
             if (fpdf.size() < 1)
@@ -2488,8 +2521,13 @@ namespace DST
             if (pdf_upEdge <= pdf_lowEdge)
                 throw std::invalid_argument("[pdf::cdf] Range is not defined.");
 
+            if(nBins<1 || nStep < 1)
+                throw std::invalid_argument("[pdf::cdf] Number of bins and number of steps must be greater than 0!");
+
             cdf_t cdf;
             cdf.reserve(nBins);
+
+            double toat_norm = getIntegral(pdf_lowEdge,pdf_upEdge,nStep);
 
             double dx = (pdf_upEdge - pdf_lowEdge) / static_cast<double>(nBins-1);
             double integral = 0;
@@ -2499,9 +2537,12 @@ namespace DST
             for(size_t k=1; k<nBins; k++)
             {
                 double x = pdf_lowEdge + dx * static_cast<double>(k);
+
+                x = std::min(x, pdf_upEdge);
+
                 integral = getIntegral(pdf_lowEdge, x, nStep);
 
-                cdf.push_back(std::make_pair(x, integral));
+                cdf.push_back(std::make_pair(x, integral/toat_norm));
             }
 
             return cdf;
@@ -2531,11 +2572,15 @@ namespace DST
 
         std::pair<double,double> pdf::brent(const double& low, const double& up, const double& tol) const
         {
-            if (fpdf.size() < 1)
-                return std::make_pair(0.,0.);
+
+            if(low >= up)
+                throw std::invalid_argument("[pdf::brent] Invalid braket range.");
 
             if (pdf_upEdge <= pdf_lowEdge)
                 throw std::invalid_argument("[pdf::brent] Range is not defined.");
+
+            if (fpdf.size() < 1)
+                return std::make_pair(0.,0.);
 
             double a = low;
             double b = up;
@@ -2674,7 +2719,406 @@ namespace DST
             return xSlice;
         }
 #pragma endregion
+
+#pragma region - I/O
+        void pdf::dump(size_t nPts) const
+        {
+            std::cout<<"\033[34m============== PDF \033[32m"<<name<<"\033[34m : \033[0m"<<std::endl;
+            std::cout<<" - Range                  : ["<<pdf_lowEdge<<" ; "<<pdf_upEdge<<"]"<<std::endl;
+            std::cout<<" - Normalization factor   : "<<pdf_norme<<std::endl;
+            std::cout<<" - Number of function     : "<<fpdf.size()<<std::endl;
+            std::cout<<" - Unbound intgral        : "<<getIntegral()<<std::endl;
+            std::cout<<" - In range intgral       : "<<getIntegral(pdf_lowEdge,pdf_upEdge)<<std::endl;
+            std::cout<<"x ; dpdf/dx ; pdf(x) ; cdf(x)"<<std::endl;
+
+            //Built the CDF
+            cdf_t the_cdf = cdf(nPts);
+
+            for(cdf_t::const_iterator k = the_cdf.cbegin(); k != the_cdf.cend(); k++)
+            {
+                std::cout<<k->first<<" ; "<<dfdx(k->first,1e-6)<<" ; "<<(*this)(k->first)<<" ; "<<k->second<<std::endl;
+            }
+
+            std::cout<<std::endl<<std::endl;
+            
+        }
 #pragma endregion
+
+#pragma endregion
+
+#pragma region - normal_distribution class definition
+
+#pragma region -- Initialization
+
+        void normal_distribution::init()
+        {
+            clear();
+            pdf_param p={mean, rms};
+            
+            pdf_norme = 1./sqrt(rms*rms*2.*acos(-1.));   
+            add_pdf(static_cast<pdf_function>(&normal_distribution::gauss), p);
+        }
+
+#pragma endregion
+#pragma region -- Constructor/Destructor
+        
+        normal_distribution::normal_distribution(double m, double s):pdf("Normal"),mean(m),rms(s)
+        {
+            init();
+            setRange(mean-10.*rms, mean+10.*rms);
+        }
+        
+        normal_distribution::normal_distribution(const normal_distribution &N)
+        {
+            mean = N.mean;
+            rms  = N.rms;
+    
+            init();
+            setRange(mean-10.*rms, mean+10.*rms);
+        }
+#pragma endregion
+#pragma region -- pdf utilities
+
+        double normal_distribution::dfdx(const double& x, const double& d) const
+        {
+            return -0.5*2*(x-mean)/(rms*rms)*this->operator()(x);
+        }
+
+        double normal_distribution::getIntegral(const double& a, const double& b, size_t nStep) const
+        {
+            if(lowEdge() >= upEdge())
+                throw std::runtime_error("\033[31m[normal_distribution::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the integral.\033[0m\n");
+
+            if(a >= b || a < lowEdge() || b > upEdge())
+                throw std::invalid_argument("\033[31m[normal_distribution::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     Invalide range.\033[0m\n");
+
+            double sqrt2 = sqrt(2.);
+
+            return 0.5*(std::erf((b-mean)/(rms*sqrt2))-std::erf((a-mean)/(rms*sqrt2)));
+        }
+
+        cdf_t normal_distribution::cdf(const size_t& nBins, size_t nStep) const
+        {
+            if(lowEdge() >= upEdge())
+                throw std::runtime_error("\033[31m[normal_distribution::cdf]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the CDF.\033[0m\n");
+            
+            cdf_t cdf;
+            cdf.reserve(nBins);
+
+            double xmax = upEdge();
+            double xmin = lowEdge();
+    
+            double dx = (xmax - xmin) / static_cast<double>(nBins-1);
+    
+            cdf.push_back(std::make_pair(xmin, 0));
+
+            for(size_t k=1; k<nBins; k++)
+            {
+                double x = xmin + dx * static_cast<double>(k);
+                cdf.push_back(std::make_pair(x, getIntegral(xmin, x, 0)));
+            }
+    
+            return cdf;
+
+        }
+
+#pragma endregion
+#pragma region -- pdf functions
+        
+        double normal_distribution::gauss(const double& x, const pdf_param& p) const
+        {
+            return exp(-0.5*(x-p[0])*(x-p[0])/(p[1]*p[1]));
+        }
+
+#pragma endregion
+#pragma endregion
+
+#pragma region - log_normal_distribution class definition
+#pragma region -- Initialization
+
+        void log_normal_distribution::init()
+        {
+            clear();
+            pdf_param p={mean, rms};
+            
+            double _PI2_ = 2*DST::Math::MathCore::Pi();
+            pdf_norme = 1./std::sqrt(rms*rms*_PI2_);
+            add_pdf(static_cast<pdf_function>(&log_normal_distribution::log_normal), p);
+        }
+#pragma endregion
+#pragma region -- Constructor/Destructor        
+
+        log_normal_distribution::log_normal_distribution(double m, double s):pdf("Log Normal"),mean(m),rms(s)
+        {
+            init();
+            setRange(1e-6, mean+10.*rms);
+        }
+        
+        log_normal_distribution::log_normal_distribution(const log_normal_distribution &N)
+        {
+            mean = N.mean;
+            rms  = N.rms;
+            setRange(0, mean+10.*rms);
+
+            init();
+        }
+
+#pragma endregion
+#pragma region -- pdf utilities
+
+        double log_normal_distribution::dfdx(const double& x, const double& d) const
+        {
+            if(x <= 0)
+                return 0;
+
+            return -(*this)(x)/x * ( 1 + (std::log(x)-mean)/(rms*rms) );
+        }
+
+        double log_normal_distribution::getIntegral(const double& a, const double& b, size_t nStep) const
+        {
+            if(lowEdge() >= upEdge() )
+                throw std::runtime_error("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the integral.\033[0m\n");
+
+            if(a >= b || a < lowEdge() || b > upEdge() || a < 0 || b < 0)
+                throw std::invalid_argument("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     Invalid range.\033[0m\n");
+
+            double sqrt2 = std::sqrt(2.);
+            return 0.5 * (std::erf((std::log(b)-mean)/(rms*sqrt2)) - std::erf((std::log(a)-mean)/(rms*sqrt2)));
+        }
+
+        cdf_t log_normal_distribution::cdf(const size_t& nBins, size_t nStep) const
+        {
+            if(lowEdge() >= upEdge())
+                throw std::runtime_error("\033[31m[log_normal_distribution::cdf]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the CDF.\033[0m\n");
+            
+            cdf_t cdf;
+            cdf.reserve(nBins);
+            double xmax = upEdge();
+            double xmin = lowEdge();
+    
+            double dx = (xmax - xmin) / static_cast<double>(nBins-1);
+    
+            cdf.push_back(std::make_pair(xmin, 0));
+
+            for(size_t k=1; k<nBins; k++)
+            {
+                double x = xmin + dx * static_cast<double>(k);
+                cdf.push_back(std::make_pair(x, getIntegral(xmin, std::min(x,xmax), 0)));
+            }
+    
+            return cdf;
+
+        }
+
+#pragma endregion
+#pragma region -- pdf functions
+
+        double log_normal_distribution::log_normal(const double& x, const pdf_param& p) const
+        {
+            if(x < 0)
+                return 0;
+            
+            return  1./x * std::exp(-0.5*std::pow(std::log(x)-p[0],2.)/(p[1]*p[1]));
+        }
+#pragma endregion
+#pragma endregion
+
+#pragma region - chi2_distribution class definition
+#pragma region -- Initialization
+
+        void chi2_distribution::init()
+        {
+            clear();
+            pdf_param p={ndf};
+            pdf_norme = 1.;
+
+            double zp = 1.64485362695;
+
+            xp = ndf;
+            for(size_t i = 0; i < 3 ; i++)
+                xp*=(1-2/(9.*ndf)+zp*std::sqrt(2./(9.*ndf)));
+            
+            setRange(1e-6, xp*2);
+            
+            add_pdf(static_cast<pdf_function>(&chi2_distribution::chi2), p);
+        }
+#pragma endregion
+#pragma region -- Constructor/Destructor        
+
+        chi2_distribution::chi2_distribution(const double& n):pdf("Chi2"),ndf(n)
+        {
+            init();
+            setRange(1e-6, 10.*2.*ndf);
+        }
+        
+        chi2_distribution::chi2_distribution(const chi2_distribution &N)
+        {
+            ndf = N.ndf;
+            setRange(1e-6, 10.*2.*ndf);
+
+            init();
+        }
+
+#pragma endregion
+#pragma region -- pdf utilities
+
+        double chi2_distribution::dfdx(const double& x, const double& d) const
+        {
+            if(x <= 0)
+                return 0;
+
+            double a = 0.5*ndf;
+
+            return (*this)(x) * ((a-1.)/x-1./2.);
+        }
+
+        double chi2_distribution::getIntegral(const double& a, const double& b, size_t nStep) const
+        {
+            if(lowEdge() >= upEdge() )
+                throw std::runtime_error("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the integral.\033[0m\n");
+
+            if(a >= b || a < lowEdge() || b > upEdge() || a < 0 || b < 0)
+                throw std::invalid_argument("\033[31m[pdf::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     Invalid range.\033[0m\n");
+
+            return cdfAt(b) - cdfAt(a);
+        }
+
+        cdf_t chi2_distribution::cdf(const size_t& nBins, size_t nStep) const
+        {
+            if(lowEdge() >= upEdge())
+                throw std::runtime_error("\033[31m[log_normal_distribution::cdf]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range must be defined before estimating the CDF.\033[0m\n");
+            
+            cdf_t cdf;
+            cdf.reserve(nBins);
+            double xmax = upEdge();
+            double xmin = lowEdge();
+    
+            double dx = (xmax - xmin) / static_cast<double>(nBins-1);
+    
+            cdf.push_back(std::make_pair(xmin, 0));
+
+            for(size_t k=1; k<nBins; k++)
+            {
+                double x = xmin + dx * static_cast<double>(k);
+                cdf.push_back(std::make_pair(x, cdfAt(x)));
+            }
+    
+            return cdf;
+
+        }
+
+#pragma endregion
+#pragma region -- pdf functions
+
+        /**
+         * @brief evaluate Chi2 cumulative distribution function at \c x
+         * 
+         * @param x valid position where to evaluate the Chi2 CDF
+         * @return \f$\frac{\gamma(ndf/2, x/2)}{\Gamma(ndf/2)}\f$
+         */
+        double chi2_distribution::cdfAt(const double& x) const
+        {
+            if(x < 0)
+                return 0;
+
+            return MathCore::Gamma(ndf/2., x/2.);
+        }
+
+        /**
+         * @brief evaluate Chi2 probability density function at \c x
+         * 
+         * @param x valid position where to evaluate the Chi2 PDF
+         * @param p pacerameters of the Chi2 PDF (only ndf is used)
+         * @return \f$\frac{1}{2^{ndf/2}\Gamma(ndf/2)} x^{(ndf/2)-1} e^{-x/2}\f$
+         */
+        double chi2_distribution::chi2(const double& x, const pdf_param& p) const
+        {
+            if(x < 0)
+                return 0;
+            
+            return  1./(pow(2.,p[0]/2.)*MathCore::Gamma(p[0]/2.)) * std::pow(x,(p[0]/2.)-1.) * exp(-x/2.);
+        }
+#pragma endregion
+#pragma endregion
+
+#pragma region - crystall-ball distribution
+#pragma region -- Initialization
+
+        void Cball_distribution::init()
+        {
+            clear();
+            pdf_param p={alpha,fn,mean,sigma};
+            pdf_norme = 1.;
+            
+            add_pdf(static_cast<pdf_function>(&Cball_distribution::crystall_ball), p);
+        }
+#pragma endregion
+#pragma region -- Constructor/Destructor        
+
+        Cball_distribution::Cball_distribution(const double& alpha, const double& n, const double& mean, const double& sigma):pdf("Crystall-Ball"),alpha(alpha),fn(n),mean(mean),sigma(sigma)
+        {
+            init();
+            setRange(mean-10*sigma, mean+5*sigma);
+        }
+        
+        Cball_distribution::Cball_distribution(const Cball_distribution &N)
+        {
+            alpha = N.alpha;
+            fn = N.fn;
+            mean = N.mean;
+            sigma = N.sigma;
+
+            init();
+            setRange(mean-10*sigma, mean+5*sigma);
+        }
+
+#pragma endregion
+#pragma region -- pdf utilities
+
+        double Cball_distribution::dfdx(const double& x, const double& d) const
+        {
+            double A = pow(fn/std::abs(alpha),fn) * exp(-0.5*alpha*alpha);
+            double B = fn/std::abs(alpha) - std::abs(alpha);
+            double C = fn/std::abs(alpha) * 1./( fn - 1.) * exp(-0.5*alpha*alpha);
+            double D = std::sqrt(MathCore::Pi()/2.) * (1.+std::erf(alpha/std::sqrt(2.)));
+            double N = 1./sigma * 1./(C + D);
+
+            double t = (x - mean) / sigma;
+
+            return N* ((t <= -alpha) ? A*fn/sigma*pow(B - t, -(fn+1)) : -t/sigma*exp(-0.5 * t*t));
+        }
+
+#pragma endregion
+#pragma region -- pdf functions
+
+        /**
+         * @brief evaluate Chi2 probability density function at \c x
+         * 
+         * @param x valid position where to evaluate the Chi2 PDF
+         * @param p pacerameters of the Chi2 PDF (only ndf is used)
+         * @return \f$\frac{1}{2^{ndf/2}\Gamma(ndf/2)} x^{(ndf/2)-1} e^{-x/2}\f$
+         */
+        double Cball_distribution::crystall_ball(const double& x, const pdf_param& p) const
+        {
+            double _alph = p[0];
+            double _n    = p[1];
+            double _mean = p[2];
+            double _sig  = p[3];
+
+            double A = pow(_n/std::abs(_alph),_n) * exp(-0.5*_alph*_alph);
+            double B = _n/std::abs(_alph) - std::abs(_alph);
+            double C = _n/std::abs(_alph) * 1./( _n - 1.) * exp(-0.5*_alph*_alph);
+            double D = std::sqrt(MathCore::Pi()/2.) * (1.+std::erf(_alph/std::sqrt(2.)));
+            double N = 1./_sig * 1./(C + D);
+
+            double t = (x - _mean) / _sig;
+                        
+            return  N* ((t <= -_alph) ? A*pow(B - t, -_n) : exp(-0.5 * t*t));
+        }
+#pragma endregion
+#pragma endregion
+
+
 
     }
         
