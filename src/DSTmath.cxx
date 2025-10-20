@@ -16,6 +16,7 @@
 #include <sstream>
 #include <iostream>
 #include <iomanip>
+#include <cmath>
 #include<stdexcept>
 
 //---
@@ -714,25 +715,27 @@ namespace DST
              */
             double polynom::chebev(const double& x, const std::vector<double>& c, const double& a, const double& b, unsigned int n)
             {
-                double d=0.0,dd=0.0,sv,y,y2;
+                double d=0.0,dd=0.0,y,y2;
                 if ( (x-a)*(x-b) > 0.0 )
                 {
                     throw std::invalid_argument("\033[31m[polynom::chebev]\033[0mx @"+std::to_string(x)+" is out-of-range ["+std::to_string(a)+" , "+std::to_string(b)+"].");
                 }
 
-                unsigned int m = (n > 0) ? ( (n <= c.size() )? n:c.size() ) : c.size();
+                size_t m = (n > 0) ? ( (n <= c.size() )? n:c.size() ) : c.size();
 
 
                 y=(2.0 * x-a-b)/(b-a);
                 y2 = 2.0*(y);
-                for (unsigned int j = m-1; j>=1 ; j--)
+                // Clenshaw recurrence (rewrote from Numerical recipies and use of std::fma for preciser and faster convergence). Iterate j = m-1 down to 1 inclusive.
+                for (size_t j = m; j-- > 1; )
                 {
-                    sv=d;
-                    d=y2*d-dd+c[j];
-                    dd=sv;
+                    const double cj = c[j];
+                    const double t  = std::fma(y2, d, cj) - dd; // y2*d - dd + cj
+                    dd = d;
+                    d  = t;
                 }
 
-                return y*d-dd+c[0];
+                return std::fma(y, d, c[0] - dd); // y*d + c[0] - dd
             }
 
             /**
