@@ -1499,7 +1499,7 @@ FORMULA_TRANSPARENT    = YES
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
 USE_MATHJAX            = YES
-MATHJAX_VERSION        = MathJax_4
+MATHJAX_VERSION        = MathJax_2
 
 # When MathJax is enabled you can set the default output format to be used for
 # the MathJax output. See the MathJax site (see:
@@ -1509,14 +1509,14 @@ MATHJAX_VERSION        = MathJax_4
 # The default value is: HTML-CSS.
 # This tag requires that the tag USE_MATHJAX is set to YES.
 
-MATHJAX_FORMAT         = chtml
+MATHJAX_FORMAT         = HTML-CSS
 
 # When MathJax is enabled you need to specify the location relative to the HTML
 # output directory using the MATHJAX_RELPATH option. The destination directory
 # should contain the MathJax.js script. For instance, if the mathjax directory
 # is located at the same level as the HTML output directory, then
 # MATHJAX_RELPATH should be ../mathjax. The default value points to the MathJax
-# Content Delivery Network so you can quickly see the result without installing
+# Content Delivery Network so you can quickly see th2 result without installing
 # MathJax. However, it is strongly recommended to install a local copy of
 # MathJax from http://www.mathjax.org before deployment.
 # The default value is: http://cdn.mathjax.org/mathjax/latest.
