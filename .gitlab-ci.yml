@@ -53,7 +53,7 @@ create-pages:
       artifacts: true
   script:
     - mkdir public
-    - npm install mathjax
+    - npm install mathjax@2
     - cmake .
     - make doc
     - mv doc/html/* ./public
