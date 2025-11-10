@@ -21,7 +21,7 @@ before_script:
   - apt-get install -y cmake make
   - apt-get install -y libgsl-dev
   - apt-get install -y doxygen graphviz
-  - apt-get install -y gdb libboost-filesystem-dev libboost-chrono-dev libboost-thread-dev libboost-regex-dev
+  - apt-get install -y gdb libboost-filesystem-dev libboost-chrono-dev libboost-thread-dev libboost-regex-dev npm
 
 deps:
   stage: .pre
@@ -53,10 +53,11 @@ create-pages:
       artifacts: true
   script:
     - mkdir public
-    - ls -l
+    - npm install mathjax@2
     - cmake .
     - make doc
     - mv doc/html/* ./public
+    - mv node_modules/mathjax ./public/mathjax
     - ls public
   pages:
     expire_in: 1 week

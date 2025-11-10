@@ -22,6 +22,9 @@
 #include <string>
 #include <random>
 
+#include <DSTmath/DSTmath.h>
+#include <DSTmath/DSTarray.h>
+
 typedef std::map<int,double> value; ///< ! Probability distribution function : a set of variable x with their associated probability
 typedef std::map<int,double> weight;
 typedef std::vector<double> farray;
@@ -33,6 +36,13 @@ namespace DST
 {
     namespace Math
     {
+        typedef std::vector< std::pair<double,double> > hist_t;
+        typedef std::vector< std::pair<double,double> > cdf_t;
+
+        double ks_uniform_pvalue(const MaskedArray<double>& xs, const double& a, const double& b);
+        double ks_uniform_pvalue(const std::valarray<double>& xs, const double& a, const double& b);
+        double ks_uniform_pvalue(const std::vector<double>& xs, const double& a, const double& b);
+
 #pragma region - template helper
 
         template<typename U>
@@ -473,13 +483,13 @@ namespace DST
     class pdf;
     
     typedef std::vector<double> pdf_param;
-    typedef double (pdf::*pdf_function)(double, pdf_param) const;
+    typedef double (pdf::*pdf_function)(const double&, const pdf_param&) const;
     typedef std::pair<pdf_param,pdf_function> pdf_distribution;
     typedef std::vector<pdf_distribution> pdf_list;
     
     /**
      *  @class pdf DSTstatistic.h "DSTmath/DSTstatistic.h"
-     *  @brief Analytical probability distribution function
+     *  @brief Analytical probability distribution function.
      *  @details The class \c pdf is used to perform operation on unbinned probability distribution function of statiscal quantities.
      */
     class pdf
@@ -487,60 +497,92 @@ namespace DST
 
 #pragma region -- protected memeber
     protected:
-        double fmax;
         double pdf_norme;
+
+#pragma region - constructor/destructor
+
+        pdf (const std::string n = "unamed");
+        ~pdf(){clear();};
+
+#pragma endregion
+#pragma region -- PDF helpers
+
+        /**
+         * @brief Brent algorithm to helpers to find the maximum of the PDF
+         * 
+         * @param tol 
+         * @return std::pair<double,double> 
+         */
+        std::pair<double,double> brent(const double&,const double&, const double& ) const;
+        
+#pragma endregion 
 #pragma endregion 
 
 #pragma region -- private memeber
     private:
 
-        //pdf_function_list fpdf;
+        const std::string name;
         pdf_list fpdf;
-        
         double pdf_lowEdge;
         double pdf_upEdge;
 
         double xSlice, ySlice;
 
 #pragma region - random generator
+
         int64_t seed;
         std::mt19937_64 rndgen;
+
 #pragma endregion
 #pragma endregion
 
 #pragma region -- public memeber
     public:
-#pragma region - constructor/destructor
-        pdf ();
-        ~pdf(){fpdf.clear();}
-        
-#pragma endregion
 
 #pragma region - Probability function managment
-        //void add_pdf(pdf_function);
+
         void add_pdf(pdf_function, pdf_param);
-        void add_pdf(pdf_distribution);
+        void clear(){fpdf.clear(); pdf_norme=1;}
+        virtual void Normalize(size_t nStep = 1000) final; 
         
 #pragma endregion
-
 #pragma region - PDF estimator
-        double operator()(double);
-        inline double get_maximum() const {return fmax;}
-#pragma endregion
 
+        virtual double operator()(double) const final;
+        virtual double getMPV() const;
+        virtual double getIntegral(size_t nStep = 1000) const;
+        virtual double getIntegral(const double&, const double&, size_t nStep = 1000) const;
+        virtual double dfdx(const double&, const double&) const;
+
+        virtual cdf_t cdf(const size_t& nBins, size_t nStep = 1000) const;
+        
+        inline double NormalisationFactor() const {return pdf_norme;}
+        
+#pragma endregion
+#pragma region - accessor
+
+        inline const double& lowEdge() const {return pdf_lowEdge;}
+        inline const double& upEdge () const {return pdf_upEdge ;}
+
+#pragma endregion
 #pragma region - Configuration
-        void setRange(double, double);
+
+        virtual void setRange(double, double);
+
 #pragma endregion
 
 #pragma region - Random kernel
-        double operator()(void);
-        double gen(void);
+
+        virtual double operator()(void) final;
+        virtual double gen(void) final;
+
 #pragma endregion
 
-#pragma region - operator
-        inline void operator*=(double scale){pdf_norme *= scale;}
-        inline void operator/=(double scale){pdf_norme /= scale;}
+#pragma region - I/O
+        virtual void dump(size_t nPts = 500) const;
+        virtual void Dump(size_t nPts = 500) const final {return dump(nPts);}
 #pragma endregion
+
 #pragma endregion
     };
         
@@ -548,94 +590,143 @@ namespace DST
 
 
 #pragma region - normal_distribution class definition
+/**
+ * @class normal_distribution "DSTstatistic.h" "DSTmath/DSTstatistic.h"
+ * @brief Analytical normal (Gaussian) probability distribution function.
+ * @details The class \c normal_distribution is used to perform operation on unbinned normal (Gaussian) probability distribution function of statiscal quantities.
+ */
     class normal_distribution: public pdf
     {
     private:
         double mean, rms;
+
+        void init();
         
     public:
-        normal_distribution(double m, double s):pdf(),mean(m),rms(s)
-        {
-            pdf_param p={mean, rms};
-            
-            fmax = gauss(mean,p);
-            pdf_norme = 1./sqrt(rms*rms*2.*acos(-1.));
-            setRange(mean-10.*rms, mean+10.*rms);
-            
-            add_pdf(static_cast<pdf_function>(&normal_distribution::gauss), p);
-        }
+        normal_distribution(double m, double s);
+        normal_distribution(const normal_distribution &N);
         
-        normal_distribution(const normal_distribution &N)
-        {
-            mean = N.mean;
-            rms  = N.rms;
-            fmax = N.fmax;
-            pdf_norme = N.pdf_norme;
-            
-            setRange(mean-10.*rms, mean+10.*rms);
-            
-            pdf_param p={mean, rms};
-            
-            add_pdf(static_cast<pdf_function>(&normal_distribution::gauss), p);
-        }
-        
-        inline void set_sigma(double s){rms=s;}
-        inline void set_mean (double m){mean=m;}
+        inline void Sigma(double s){rms=s; init();}
+        inline void Mean (double m){mean=m; init();}
+
+        inline double getMPV() const override { return mean;}
+
+        double dfdx(const double& x, const double& d) const override;
+        double getIntegral(const double& a, const double& b, size_t nStep = 1000) const override;
+        double getIntegral(size_t nStep = 1000) const override {return 1.0;}
+        cdf_t cdf(const size_t& nBins, size_t nStep = 1000) const override;
         
     protected:
-        double gauss(double x, pdf_param p) const
-        {
-            return exp(-0.5*(x-p[0])*(x-p[0])/(p[1]*p[1]));
-        }
+        double gauss(const double& x, const pdf_param& p) const;
     };
     
 
 #pragma endregion
 
 #pragma region - log_normal_distribution class definition
+/**
+ * @class log_normal_distribution "DSTstatistic.h" "DSTmath/DSTstatistic.h"
+ * @brief Analytical log-normal probability distribution function.
+ * @details The class \c log_normal_distribution is used to perform operation on unbinned log-normal probability distribution function of statiscal quantities.
+ */
     class log_normal_distribution: public pdf
     {
     private:
         double mean, rms;
+
+        void init();
         
     public:
-        log_normal_distribution(double m, double s):pdf(),mean(m),rms(s)
-        {
-            pdf_param p={mean, rms};
-            
-            fmax = log_normal(mean, p);
-            pdf_norme = 1./sqrt(rms*rms*2.*acos(-1));
-            setRange(mean-10.*rms, mean+10.*rms);
-            
-            add_pdf(static_cast<pdf_function>(&log_normal_distribution::log_normal), p);
-        }
+        log_normal_distribution(double m, double s);
         
-        log_normal_distribution(const log_normal_distribution &N)
-        {
-            mean = N.mean;
-            rms  = N.rms;
-            fmax = N.fmax;
-            pdf_norme = N.pdf_norme;
-            
-            pdf_param p={mean, rms};
-            
-            setRange(0, mean*(1+3*rms));
-            
-            add_pdf(static_cast<pdf_function>(&log_normal_distribution::log_normal), p);
-        }
+        log_normal_distribution(const log_normal_distribution &N);
+
+        inline void setRange(double a, double b) override { if(a <= 0 || b <= 0 || a >= b) throw std::invalid_argument("\033[31m[log_normal_distribution::setRange]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     Log-normal distribution range must be strictly positive.\033[0m\n"); pdf::setRange(a,b);}
+
+        inline void Sigma(double s){rms=s; init();}
+        inline void Mean (double m){mean=m; init();}
+
+        inline double getMPV() const override {return exp(log(mean)-rms*rms);}
+        double dfdx(const double& x, const double& d) const override;
+        double getIntegral(const double& a, const double& b, size_t nStep = 1000) const override;
+        double getIntegral(size_t nStep = 1000) const override {return 1.0;};
+        cdf_t cdf(const size_t& nBins, size_t nStep = 1000) const override;
         
     protected:
-        double log_normal(double x, pdf_param p) const
-        {
-            if(x < 0)
-                return 0;
-            
-            return 1./x*exp(-0.5*(log(x/p[0])*log(x/p[0]))/(p[1]*p[1]));
-        }
+        double log_normal(const double& x, const pdf_param& p) const;
         
     };
 #pragma endregion
- 
+
+#pragma region - chi2 distribution
+    /**
+     * @brief  Chi2  distribution function
+     * 
+     */
+
+    class chi2_distribution : public pdf
+    {
+        private:
+            double ndf;
+            double xp; //<! 95th percentile
+            void init();
+            double cdfAt(const double& x) const;
+        
+        public:
+
+            inline void setRange(double a, double b) override { if(a <= 0 || b <= 0 || a >= b) throw std::invalid_argument("\033[31m[chi2_distribution::setRange]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     Chi2 distribution range must be strictly positive.\033[0m\n"); pdf::setRange(a,b);}
+
+            chi2_distribution(const double& ndf);
+            chi2_distribution(const chi2_distribution &N);
+
+            inline void NDF(const double& n){ndf=n; init();}
+
+            inline double getMPV() const override { return ndf - 2.0;}
+            inline double get95Q() const { return xp; }
+
+            double dfdx(const double& x, const double& d) const override;
+            double getIntegral(const double& a, const double& b, size_t nStep = 1000) const override;
+            double getIntegral(size_t nStep = 1000) const override {return 1.0;}
+            cdf_t cdf(const size_t& nBins, size_t nStep = 1000) const override;
+
+        protected:
+            double chi2(const double& x, const pdf_param& p) const;
+    };
+#pragma endregion
+
+#pragma region - crystall-ball distribution
+    /**
+     * @brief  Chi2  distribution function
+     * 
+     */
+
+    class Cball_distribution : public pdf
+    {
+        private:
+            double alpha,fn,mean,sigma;
+            void init();
+        
+        public:
+
+            Cball_distribution(const double&,const double&,const double&,const double&);
+            Cball_distribution(const Cball_distribution &N);
+
+            void Alpha(const double& a){alpha=a; init();}
+            void N(const double& n){fn=n; init();}
+            void Mean(const double& m){mean=m; init();}
+            void Sigma(const double& s){sigma=s; init();}
+
+            inline double getMPV() const override { return mean;}
+
+            double dfdx(const double& x, const double& d) const override;
+            
+        protected:
+            double crystall_ball(const double& x, const pdf_param& p) const;
+    };
+#pragma endregion
+
+
+       
     }
 }
 

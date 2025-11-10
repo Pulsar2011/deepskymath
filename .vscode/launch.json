@@ -23,6 +23,16 @@
         "osx": {
             "MIMode": "lldb"
         }
+    },
+    {
+        "name": "gTest_Pdf [dbg]",
+         "type": "cppdbg",
+        "request": "launch",
+        "program": "${workspaceFolder}/build/exe/gTest_Pdf",
+        "cwd": "${workspaceFolder}",
+        "osx": {
+            "MIMode": "lldb"
+        }
     }
     ]
 }

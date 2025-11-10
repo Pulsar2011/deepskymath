@@ -14,47 +14,6 @@
 #include <vector>
 #include <algorithm>
 
-static double ks_uniform_pvalue(const std::vector<double>& xs, double a, double b)
-{
-    const std::size_t n = xs.size();
-    if (n == 0 || !(b > a)) return 0.0;
-
-    std::vector<double> u;
-    u.reserve(n);
-    const double invW = 1.0 / (b - a);
-    for (double v : xs) {
-        double t = (v - a) * invW;
-        if (t < 0.0) t = 0.0;
-        if (t > 1.0) t = 1.0;
-        u.push_back(t);
-    }
-    std::sort(u.begin(), u.end());
-
-    // D statistic
-    double d = 0.0;
-    for (std::size_t i = 0; i < n; ++i) {
-        double fi = (i + 1) / static_cast<double>(n);
-        double d1 = fi - u[i];
-        double d2 = u[i] - (i / static_cast<double>(n));
-        d = std::max(d, std::max(d1, d2));
-    }
-
-    // Asymptotic p-value approximation
-    const double en = std::sqrt(static_cast<double>(n));
-    const double lambda = (en + 0.12 + 0.11 / en) * d;
-
-    double p = 0.0;
-    const int JMAX = 100;
-    for (int j = 1; j <= JMAX; ++j) {
-        const double term = std::exp(-2.0 * j * j * lambda * lambda);
-        p += ((j & 1) ? 1.0 : -1.0) * 2.0 * term;
-        if (term < 1e-12) break;
-    }
-    if (p < 0.0) p = 0.0;
-    if (p > 1.0) p = 1.0;
-    return p;
-}
-
 template <typename T>
 class StatsTest : public ::testing::Test
 {
@@ -94,12 +53,12 @@ TYPED_TEST(StatsTest, positive_uniform_distribution)
         const double k = static_cast<double>(static_cast<long long>(max) - static_cast<long long>(min) + 1);
         for (size_t i=0;i<N;++i)
             xs[i] = (static_cast<double>(array.data()[i] - min) + 0.5) / k;
-        double p = ks_uniform_pvalue(xs, 0.0, 1.0);
+        double p = DST::Math::ks_uniform_pvalue(xs, 0.0, 1.0);
         EXPECT_GT(p, alpha);
     } else {
         for (size_t i=0;i<N;++i)
             xs[i] = static_cast<double>(array.data()[i]);
-        double p = ks_uniform_pvalue(xs, static_cast<double>(min), static_cast<double>(max));
+        double p = DST::Math::ks_uniform_pvalue(xs, static_cast<double>(min), static_cast<double>(max));
         EXPECT_GT(p, alpha);
     }
 }
@@ -172,12 +131,12 @@ TYPED_TEST(StatsTest, uniform_distribution)
         const double k = static_cast<double>(static_cast<long long>(max) - static_cast<long long>(min) + 1);
         for (size_t i=0;i<N;++i)
             xs[i] = (static_cast<double>(array.data()[i] - min) + 0.5) / k;
-        double p = ks_uniform_pvalue(xs, 0.0, 1.0);
+        double p = DST::Math::ks_uniform_pvalue(xs, 0.0, 1.0);
         EXPECT_GT(p, alpha);
     } else {
         for (size_t i=0;i<N;++i)
             xs[i] = static_cast<double>(array.data()[i]);
-        double p = ks_uniform_pvalue(xs, static_cast<double>(min), static_cast<double>(max));
+        double p = DST::Math::ks_uniform_pvalue(xs, static_cast<double>(min), static_cast<double>(max));
         EXPECT_GT(p, alpha);
     }
 }
@@ -212,7 +171,7 @@ TEST(DistributionTest, normalDistribution)
         u[i] = normal_cdf(z);
     }
     constexpr double alpha = 1e-6;
-    double p = ks_uniform_pvalue(u, 0.0, 1.0);
+    double p = DST::Math::ks_uniform_pvalue(u, 0.0, 1.0);
     EXPECT_GT(p, alpha);
 
     EXPECT_ANY_THROW(DST::Math::sample_normal_distribution(0,-1*sigma));
