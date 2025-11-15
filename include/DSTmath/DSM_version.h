@@ -1,5 +1,5 @@
-#ifndef DST_VERSION_H
-#define DST_VERSION_H
+#ifndef DSM_VERSION_H
+#define DSM_VERSION_H
 
 #include <string>
 #include <vector>

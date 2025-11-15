@@ -51,6 +51,8 @@ namespace DST
             }
             
             point(const std::initializer_list<double>& );
+            point(const std::vector<double>& );
+
             point(const point&);
             virtual ~point();
             
@@ -109,6 +111,16 @@ namespace DST
 #pragma mark -- Debug
             virtual std::string Dump() const;
             static bool debug;
+
+            template<typename T,
+            std::enable_if_t<(std::is_arithmetic<T>::value && !std::is_same<T,bool>::value), int> = 0>
+            static point pointFromVector(const std::vector<T>& lst)
+            {
+                std::vector<double> il;
+                for(const auto& val : lst)
+                    il.push_back(static_cast<double>(val));
+                return point(il);
+            }
         };
         
 #pragma mark - vector2D class definition

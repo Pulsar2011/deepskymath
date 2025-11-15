@@ -48,10 +48,19 @@ namespace DST
         /**
          *  @brief Default constructor
          *  @details Create double precision point coordinates with n dimension
-         *  @param n number of dimension
-         *  @param x floating point cartesian coordinates
+         *  @param x list of floating point cartesian coordinates
          */
         point::point(const std::initializer_list<double>& coo):fx(coo)
+        {
+
+        }
+
+        /**
+         *  @brief Default constructor
+         *  @details Create double precision point coordinates with n dimension
+         *  @param x vector of floating point cartesian coordinates
+         */
+        point::point(const std::vector<double>& coo):fx(coo)
         {
 
         }
@@ -83,6 +92,9 @@ namespace DST
         {
             if (args.size() < fx.size())
                 throw std::invalid_argument("Not enough arguments for point::SetPoints");
+
+            if(fx.size()<1)
+                fx.resize(args.size());
             
 #if __cplusplus >= 202002L
             for (std::tuple<double&, const double&> elem : std::views::zip(fx, args))
@@ -111,6 +123,9 @@ namespace DST
         {
             if (args.size() < fx.size())
                 throw std::invalid_argument("Not enough arguments for point::SetPoints");
+
+            if(fx.size()<1)
+                fx.resize(args.size());
             
 #if __cplusplus >= 202002L
             for (std::tuple<double&, const float&> elem : std::views::zip(fx, args))
@@ -137,6 +152,9 @@ namespace DST
          */
         void point::SetPoints(const std::vector<double>& args)
         {
+            if(fx.size()<1)
+                fx.resize(args.size());
+
 #if __cplusplus >= 202002L
             for (std::tuple<double&, const double&> elem : std::views::zip(fx, args))
             {
@@ -161,6 +179,9 @@ namespace DST
          */
         void point::SetPoints(const std::vector<float>& args)
         {
+            if(fx.size()<1)
+                fx.resize(args.size());
+
 #if __cplusplus >= 202002L
             for (std::tuple<double&, const float&> elem : std::views::zip(fx, args))
             {
@@ -185,8 +206,11 @@ namespace DST
          */
         void point::SetPoints( const point& p )
         {
+            if(fx.size()<1)
+                fx.resize(p.fx.size());
+
             if( fx.size() != p.fx.size())
-                throw std::runtime_error(std::string("point::SetPoints size of p different from size of this. "+std::to_string(__LINE__)).c_str());
+                throw std::runtime_error(std::string("point::SetPoints size of p("+std::to_string(p.fx.size())+") different from size of this("+std::to_string(fx.size())+"). "+std::to_string(__LINE__)).c_str());
 
             std::transform(fx.begin(), fx.end(), p.fx.cbegin(),fx.begin(),[](double a, double b){return a*0. + b;});
            
