@@ -1284,4 +1284,50 @@ TEST(vector3D,aritmetic)
 }
 
 #pragma endregion
+#pragma region - Test point::pointFromVector
+
+TEST(point, pointFromVector)
+{
+    std::mt19937 re(0xC0FFEE);
+    std::uniform_int_distribution<int> n_dist(1, 8);
+    std::uniform_int_distribution<int32_t> di(-100000, 100000);
+    std::uniform_int_distribution<uint32_t> du(0, 100000);
+    std::uniform_real_distribution<double> dd(-1e6, 1e6);
+    std::uniform_real_distribution<float> df(-1e6f, 1e6f);
+
+    for (size_t k = 0; k < NTEST; ++k)
+    {
+        int n = n_dist(re);
+
+        // uint32_t
+        std::vector<uint32_t> vu(n);
+        for (int i = 0; i < n; ++i) vu[i] = du(re);
+        point pu = point::pointFromVector(vu);
+        EXPECT_EQ(pu.size(), vu.size());
+        for (int i = 0; i < n; ++i) EXPECT_NEAR(pu[i], static_cast<double>(vu[i]), point::precision);
+
+        // int32_t
+        std::vector<int32_t> vi(n);
+        for (int i = 0; i < n; ++i) vi[i] = di(re);
+        point pi = point::pointFromVector(vi);
+        EXPECT_EQ(pi.size(), vi.size());
+        for (int i = 0; i < n; ++i) EXPECT_NEAR(pi[i], static_cast<double>(vi[i]), point::precision);
+
+        // double
+        std::vector<double> vd(n);
+        for (int i = 0; i < n; ++i) vd[i] = dd(re);
+        point pd = point::pointFromVector(vd);
+        EXPECT_EQ(pd.size(), vd.size());
+        for (int i = 0; i < n; ++i) EXPECT_NEAR(pd[i], vd[i], point::precision);
+
+        // float
+        std::vector<float> vf(n);
+        for (int i = 0; i < n; ++i) vf[i] = df(re);
+        point pf = point::pointFromVector(vf);
+        EXPECT_EQ(pf.size(), vf.size());
+        for (int i = 0; i < n; ++i) EXPECT_NEAR(pf[i], static_cast<double>(vf[i]), 1e-4);
+    }
+}
+
+#pragma endregion
 
