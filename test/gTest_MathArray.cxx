@@ -418,7 +418,7 @@ TEST(math_array,test_assignement)
     size_t stride_a=2;
     size_t stride_b=1;
 
-#ifdef Darwinx86_64
+#if defined(__APPLE__)
     std::gslice_array<double> gsa = tdata[std::gslice(start,{size_a,size_b},{stride_a,stride_b})];
 
     ma1 = gsa;
@@ -436,7 +436,7 @@ TEST(math_array,test_assignement)
         EXPECT_EQ  (ma1.mask()[i], false);
     }
 
-#ifdef Darwinx86_64
+#if defined(__APPLE__)
     std::mask_array<double> msa = tdata[tdata > 0];
 
     ma1 = msa;
