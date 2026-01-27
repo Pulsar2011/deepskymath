@@ -79,18 +79,22 @@ set(BUILD_SHARED_LIBS "YES")
 
 #-------------------- GCC specifics
 IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-	# Linux specific code
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pipe -fexceptions -fPIC  -Wno-unknown-pragmas -flto -mtune=native -ffp-contract=on -fomit-frame-pointer")
-	set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+    # Linux specific code (homogenized)
+    set(CMAKE_SYSTEM_PROCESSOR x86_64)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -Wall -pipe -pthread -fexceptions -fPIC -m64 -Wno-unknown-pragmas -Wmisleading-indentation -flto -mtune=native -ffp-contract=on -fomit-frame-pointer")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
 
-    if(CMAKE_C_COMPILER_ID MATCHES "GNU|Clang")
-        if(CMAKE_SYSTEM_PROCESSOR MATCHES "x86_64|amd64|i.86")
-            set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -m64")
-        endif()
+    # Enable Interprocedural Optimization (LTO) when supported on Linux
+    include(CheckIPOSupported)
+    check_ipo_supported(RESULT ipo_supported OUTPUT ipo_error)
+    if(ipo_supported)
+        set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
     endif()
 
-	set(OperatingSystem "Linux")
-	ADD_DEFINITIONS(-DLinuxx86_64)
+    set(OperatingSystem "Linux")
+    ADD_DEFINITIONS(-DLinuxx86_64)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    set(CMAKE_CXX_EXTENSIONS OFF)
 ENDIF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
 
 #-------------------- DARWIN specifics
@@ -110,7 +114,7 @@ if(WITH_DEBUG)
 	set(CMAKE_BUILD_TYPE DEBUG)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
 else(WITH_DEBUG)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3 -fno-fast-math -ffp-contract=off -fexcess-precision=standard")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 endif(WITH_DEBUG)
 
 message("${Green}-- CXX COMPILER:${ColourReset} ${CMAKE_CXX_COMPILER}")
