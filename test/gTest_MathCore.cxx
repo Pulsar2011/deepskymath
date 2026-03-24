@@ -779,3 +779,52 @@ TEST(math_core_test, chebev2_2Kind_float)
     delete [] a;
     delete [] b;
 }
+
+TEST(math_core_test, polynomial)
+{
+    
+    std::vector<double> coef = {1.,-2.,3.,-4.,5.};
+    size_t n = coef.size();
+    unsigned int ni = static_cast<unsigned int>(n);
+
+    double* da = new double [5];
+    for(size_t i =0; i < 5; i++)
+        da[i] = coef[i];
+
+#if __cplusplus >= 202002L
+    std::span<const double> dspan(da, n);
+#endif
+
+    for(unsigned int i =0; i < 101; i++)
+    {
+        double x = 2.*static_cast<double>(i)/100.-1.;
+        EXPECT_NEAR(polynom::polyev (x, coef),1.-2*x+3*x*x-4*x*x*x+5*x*x*x*x,1e-10);
+        EXPECT_NEAR(polynom::polyev (x, da,n),polynom::polyev(x, coef),1e-10);
+        EXPECT_NEAR(polynom::polyev (x, da,ni),polynom::polyev(x, coef),1e-10);
+#if __cplusplus >= 202002L
+        EXPECT_NEAR(polynom::polyev(x, dspan), polynom::polyev(x, coef), 1e-10);
+#endif
+    }
+
+    std::vector<float> fcoef = {1.f,-2.f,3.f,-4.f,5.f};
+
+    float* fa = new float [5];
+    for(size_t i =0; i < 5; i++)
+        fa[i] = fcoef[i];
+
+#if __cplusplus >= 202002L
+    std::span<const float>  fspan(fa, n);
+#endif
+
+    for(unsigned int i =0; i < 101; i++)
+    {
+        float x = 2.*static_cast<float>(i)/100.-1.;
+        EXPECT_NEAR(polynom::polyev (x, fcoef),1.f-2.f*x+3.f*x*x-4.f*x*x*x+5.f*x*x*x*x,1e-3);
+        EXPECT_NEAR(polynom::polyev (x, fa,n),polynom::polyev(x, fcoef),1e-3);
+        EXPECT_NEAR(polynom::polyev (x, fa,ni),polynom::polyev(x, fcoef),1e-3);
+#if __cplusplus >= 202002L
+        EXPECT_NEAR(polynom::polyev (x, fspan), polynom::polyev(x, fcoef), 1e-3);
+#endif
+    }
+
+}

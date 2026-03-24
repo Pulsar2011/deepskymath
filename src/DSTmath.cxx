@@ -1067,8 +1067,122 @@ namespace DST
             
             return static_cast<float>( val );
         }
-        
-    
-    
-}
+
+        /**
+         * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
+         * 
+         * @param x coordinate where to evaluate the polynome
+         * @param a vector of polynomial coefficients
+         * @return double value of the polynome \f$p(x)\f$ at \f$x\f$.
+         */
+        double polynom::polyev(const double& x, const std::vector<double>& a)
+        {
+            double p = 0;
+            int    n = 0;
+            for(std::vector<double>::const_iterator ik = a.begin(); ik != a.end(); ++ik)
+            {
+                p += (*ik)*std::pow(x, n);
+                n++;
+            }
+
+            return p;
+        }
+
+        /**
+         * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
+         * 
+         * @param x coordinate where to evaluate the polynome
+         * @param a array of polynomial coefficients
+         * @param n size of the array of polynomial coefficients
+         * @return double value of the polynome \f$p(x)\f$ at \f$x\f$.
+         */
+        double polynom::polyev(const double& x, const double *a, const size_t& n)
+        {
+            std::vector<double> a_vec(a, a + n);
+
+            return polynom::polyev(x, a_vec);
+        }
+
+        /**
+         * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
+         * 
+         * @param x coordinate where to evaluate the polynome
+         * @param a array of polynomial coefficients
+         * @param n size of the array of polynomial coefficients
+         * @return double value of the polynome \f$p(x)\f$ at \f$x\f$.
+         */
+        double polynom::polyev(const double& x, const double *a, const unsigned int& n)
+        {
+            return polynom::polyev(x, a, static_cast<size_t>( n ) );
+        }
+
+        /**
+         * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
+         * 
+         * @param x coordinate where to evaluate the polynome
+         * @param a vector of polynomial coefficients
+         * @return double value of the polynome \f$p(x)\f$ at \f$x\f$.
+         */
+        float polynom::polyev(const float& x, const std::vector<float>& a)
+        {
+            std::vector<double> ad;
+            for(size_t k = 0; k < a.size(); k++)
+                ad.push_back(static_cast<double>( a[k] ));
+
+            return static_cast<float>( polynom::polyev(x, ad) );
+        }
+
+        /**
+         * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
+         * 
+         * @param x coordinate where to evaluate the polynome
+         * @param a array of polynomial coefficients
+         * @param n size of the array of polynomial coefficients
+         * @return double value of the polynome \f$p(x)\f$ at \f$x\f$.
+         */
+        float polynom::polyev(const float& x, const float *a, const size_t& n)
+        {
+            std::vector<float> a_vec(a, a + n);
+            return polynom::polyev(x, a_vec);
+        }
+
+        /**
+         * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
+         * 
+         * @param x coordinate where to evaluate the polynome
+         * @param a array of polynomial coefficients
+         * @param n size of the array of polynomial coefficients
+         * @return double value of the polynome \f$p(x)\f$ at \f$x\f$.
+         */
+        float polynom::polyev(const float& x, const float *a, const unsigned int& n)
+        {
+            return polynom::polyev(x, a, static_cast<size_t>( n ) );
+        }
+
+#if __cplusplus >= 202002L
+        /**
+         * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
+         *
+         * @param x coordinate where to evaluate the polynome
+         * @param a span of polynomial coefficients (carries its own size)
+         * @return double value of the polynome \f$p(x)\f$ at \f$x\f$.
+         */
+        double polynom::polyev(const double& x, std::span<const double> a)
+        {
+            return polynom::polyev(x, a.data(), a.size());
+        }
+
+        /**
+         * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
+         *
+         * @param x coordinate where to evaluate the polynome
+         * @param a span of polynomial coefficients (carries its own size)
+         * @return float value of the polynome \f$p(x)\f$ at \f$x\f$.
+         */
+        float polynom::polyev(const float& x, std::span<const float> a)
+        {
+            return polynom::polyev(x, a.data(), a.size());
+        }
+#endif
+    }
 }

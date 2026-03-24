@@ -16,6 +16,9 @@
 #include<vector>
 #include <stdexcept>
 #include <string>
+#if __cplusplus >= 202002L
+#include <span>
+#endif
 
 namespace DST
 {
@@ -33,36 +36,36 @@ namespace DST
          */
         class MathCore
         {
-        protected:
-        
-            static const double kBig;
-            static const double kBiginv;
-            static const double LS2PI;
-        
-            static const double A[];
-            static const double B[];
-            static const double C[];
-            static const double P[];
-            static const double Q[];
-            static const double STIR[];
-        
-            static double igam(double, double);
-            static double lgam(double);
-        
-            static double igamc(double, double);
-        
-            static double Polynomialeval(double, const double*, unsigned int);
-            static double Polynomial1eval(double, const double*, unsigned int);
-        
-            static double small(double z, double x);
-        
-            static double stirf( double);
-        
-        public:
-        
-            static double Pi();
-            static double Gamma(double, double);
-            static double Gamma(double);
+            protected:
+            
+                static const double kBig;
+                static const double kBiginv;
+                static const double LS2PI;
+            
+                static const double A[];
+                static const double B[];
+                static const double C[];
+                static const double P[];
+                static const double Q[];
+                static const double STIR[];
+            
+                static double igam(double, double);
+                static double lgam(double);
+            
+                static double igamc(double, double);
+            
+                static double Polynomialeval(double, const double*, unsigned int);
+                static double Polynomial1eval(double, const double*, unsigned int);
+            
+                static double small(double z, double x);
+            
+                static double stirf( double);
+            
+            public:
+            
+                static double Pi();
+                static double Gamma(double, double);
+                static double Gamma(double);
         };
     
 #pragma mark - Func class definition
@@ -74,33 +77,44 @@ namespace DST
         */
         class polynom : public MathCore
         {
-        protected:
-            static std::vector<double> chebfit(std::vector<double>, double, double);
-            
-        public:
-            static std::vector<double> chebfit(double (*func)(double), const double&, const double&, const unsigned int&);
-            static std::vector<float>  chebfit(float  (*func)(float), const float&, const float&, const unsigned int&);
-            
-            static double chebev(const double&, const std::vector<double>&, const double&, const double&, unsigned int n = 0);
-            static float  chebev(const float& , const std::vector<float>&  , const float& , const float& , unsigned int n = 0);
-            static void   chebder(std::vector<double>, double, double, std::vector<double>&);
-            static void   chebder(std::vector<float>, float, float, std::vector<float>&);
-            
-            static void chebinv(double, double&, std::vector<double>, double, double, double expsillon = std::numeric_limits<double>::epsilon(), size_t max_iter = 100000);
+            protected:
+                static std::vector<double> chebfit(std::vector<double>, double, double);
+
+            public:
+                static std::vector<double> chebfit(double (*func)(double), const double&, const double&, const unsigned int&);
+                static std::vector<float>  chebfit(float  (*func)(float), const float&, const float&, const unsigned int&);
+
+                static double chebev(const double&, const std::vector<double>&, const double&, const double&, unsigned int n = 0);
+                static float  chebev(const float& , const std::vector<float>&  , const float& , const float& , unsigned int n = 0);
+                static void   chebder(std::vector<double>, double, double, std::vector<double>&);
+                static void   chebder(std::vector<float>, float, float, std::vector<float>&);
+
+                static void chebinv(double, double&, std::vector<double>, double, double, double expsillon = std::numeric_limits<double>::epsilon(), size_t max_iter = 100000);
 
 #if __cplusplus >= 199711L
-            static double chebev2(double *, std::vector<double>, std::vector<double>, double *, double *, std::vector<unsigned int> order = {0,0});
-            static float  chebev2(float  *, std::vector<float> , std::vector<float> , float  *, float  *, std::vector<unsigned int> order = {0,0});
+                static double chebev2(double *, std::vector<double>, std::vector<double>, double *, double *, std::vector<unsigned int> order = {0,0});
+                static float  chebev2(float  *, std::vector<float> , std::vector<float> , float  *, float  *, std::vector<unsigned int> order = {0,0});
 #else
-            static double chebev2(double *, std::vector<double>, std::vector<double>, double *, double *);
-            static float  chebev2(float  *, std::vector<float> , std::vector<float> , float  *, float  *);
-            
-            static double chebev2(double *, std::vector<double>, std::vector<double>, double *, double *, std::vector<unsigned int> order);
-            static float  chebev2(float  *, std::vector<float> , std::vector<float> , float  *, float  *, std::vector<unsigned int> order);
+                static double chebev2(double *, std::vector<double>, std::vector<double>, double *, double *);
+                static float  chebev2(float  *, std::vector<float> , std::vector<float> , float  *, float  *);
+
+                static double chebev2(double *, std::vector<double>, std::vector<double>, double *, double *, std::vector<unsigned int> order);
+                static float  chebev2(float  *, std::vector<float> , std::vector<float> , float  *, float  *, std::vector<unsigned int> order);
 #endif
             
-            static double chebev2(double *, std::vector<double>, double *, double *, std::vector<unsigned int> order);
-            static float  chebev2(float  *, std::vector<float>,  float  *, float  *, std::vector<unsigned int> order);
+                static double chebev2(double *, std::vector<double>, double *, double *, std::vector<unsigned int> order);
+                static float  chebev2(float  *, std::vector<float>,  float  *, float  *, std::vector<unsigned int> order);
+
+                static double polyev(const double&, const std::vector<double>&);
+                static double polyev(const double&, const double *, const size_t&);
+                static double polyev(const double&, const double *, const unsigned int&);
+                static float  polyev(const float& , const std::vector<float>&);
+                static float  polyev(const float& , const float *, const size_t&);
+                static float  polyev(const float& , const float *, const unsigned int&);
+#if __cplusplus >= 202002L
+                static double polyev(const double&, std::span<const double>);
+                static float  polyev(const float& , std::span<const float>);
+#endif
         };
         
 #pragma mark - Other mathematical function
