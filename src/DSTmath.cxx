@@ -35,7 +35,11 @@
 
 #define kMAXLGM 2.556348e305
 
-#define SQTPI   std::sqrt(2.*DST::Math::MathCore::Pi())        /* sqrt(2*pi) */
+#define SQTPI    std::sqrt(DST::Math::MathCore::Pi())     /* sqrt(pi) */
+
+#ifndef SQT2PI
+#define SQT2PI   std::sqrt(2.*DST::Math::MathCore::Pi()) /* sqrt(2*pi) */
+#endif
 
 namespace DST
 {
@@ -169,6 +173,58 @@ namespace DST
          *  @brief compute PI
          *  @return \f$\pi = \acos(-1)\f$
          */
+        /**
+         * @brief Bessel function of the first kind, order 1.
+         *
+         * @details Polynomial approximation from Numerical Recipes (Press et al.).
+         * Split at |x| = 8: rational polynomial for small |x|, asymptotic
+         * trigonometric expansion for large |x|.
+         *
+         * @param x  Argument
+         * @return   J_1(x)
+         */
+        double MathCore::J1(double x)
+        {
+            // Coefficients for |x| < 8
+            static const double r[] = {
+                 72362614232.0, -7895059235.0,  242396853.1,
+                -2972611.439,       15704.48260,   -30.16036606
+            };
+            static const double s[] = {
+                144725228442.0, 2300535178.0, 18583304.74,
+                     99447.43394,    376.9991397,       1.0
+            };
+            // Coefficients for |x| >= 8
+            static const double p[] = {
+                 1.0,             0.183105e-2,   -0.3516396496e-4,
+                 0.2457520174e-5, -0.240337019e-6
+            };
+            static const double q[] = {
+                 0.04687499995, -0.2002690873e-3,  0.8449199096e-5,
+                -0.88228987e-6,  0.105787412e-6
+            };
+
+            const double ax = std::abs(x);
+            if (ax < 8.0)
+            {
+                const double y   = x * x;
+                const double num = x * (r[0] + y*(r[1] + y*(r[2] + y*(r[3] + y*(r[4] + y*r[5])))));
+                const double den =       s[0] + y*(s[1] + y*(s[2] + y*(s[3] + y*(s[4] + y*s[5]))));
+                return num / den;
+            }
+            else
+            {
+                const double z   = 8.0 / ax;
+                const double y   = z * z;
+                const double xx  = ax - 2.356194491;   // ax - 3π/4
+                const double pp  = p[0] + y*(p[1] + y*(p[2] + y*(p[3] + y*p[4])));
+                const double qq2 = q[0] + y*(q[1] + y*(q[2] + y*(q[3] + y*q[4])));
+                const double ans = std::sqrt(2.0 / (Pi() * ax))
+                                 * (std::cos(xx)*pp - z*std::sin(xx)*qq2);
+                return (x < 0.0) ? -ans : ans;
+            }
+        }
+
         double MathCore::Pi()
         {
             return std::acos(-1);
@@ -461,7 +517,7 @@ namespace DST
             {
                 y = pow( x, x - 0.5 ) / y;
             }
-            y = SQTPI * y * w;
+            y = SQT2PI * y * w;
             return( y );
         }
 
