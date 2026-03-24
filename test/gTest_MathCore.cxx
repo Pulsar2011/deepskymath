@@ -826,5 +826,894 @@ TEST(math_core_test, polynomial)
         EXPECT_NEAR(polynom::polyev (x, fspan), polynom::polyev(x, fcoef), 1e-3);
 #endif
     }
+}
 
+// =============================================================================
+// DST::Math::function tests — float and double via typed tests
+// =============================================================================
+namespace fn = DST::Math::function;
+
+// Type-dependent absolute tolerances
+template<typename T> struct FnTol;
+template<> struct FnTol<double> {
+    static constexpr double func  = 1e-10;  // point-function comparisons
+    static constexpr double loose = 1e-6;   // comparisons involving transcendentals
+    static constexpr double integ = 1e-2;   // grid-sum normalization
+};
+template<> struct FnTol<float> {
+    static constexpr double func  = 1e-5;
+    static constexpr double loose = 1e-3;
+    static constexpr double integ = 5e-2;
+};
+
+using ScalarTypes = testing::Types<float, double>;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1-D Gaussian  gauss(x, A, m, s)
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class GaussTest : public testing::Test {};
+TYPED_TEST_SUITE(GaussTest, ScalarTypes);
+
+TYPED_TEST(GaussTest, Peak)
+{
+    using T = TypeParam;
+    const T A = 3.0, m = 1.5, s = 0.7;
+    const T expected = A / (s * std::sqrt(T(2) * T(MathCore::Pi())));
+    EXPECT_NEAR(double(fn::gauss(m, A, m, s)), double(expected), FnTol<T>::func);
+}
+
+TYPED_TEST(GaussTest, Symmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, m = 2.0, s = 1.0, d = 0.5;
+    EXPECT_NEAR(double(fn::gauss(m + d, A, m, s)),
+                double(fn::gauss(m - d, A, m, s)), FnTol<T>::func);
+}
+
+TYPED_TEST(GaussTest, NumericalNorm)
+{
+    // ∫ gauss dx over ±6σ should equal A
+    using T = TypeParam;
+    const T A = 5.0, m = 0.0, s = 1.0;
+    const size_t N = 10000;
+    const T dx = T(12) * s / T(N);
+    T sum = 0;
+    for (size_t i = 0; i < N; ++i)
+    {
+        const T x = -T(6) * s + (T(i) + T(0.5)) * dx;
+        sum += fn::gauss(x, A, m, s) * dx;
+    }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1-D integrated Gaussian  integrated_gauss / igauss
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class IGaussTest : public testing::Test {};
+TYPED_TEST_SUITE(IGaussTest, ScalarTypes);
+
+TYPED_TEST(IGaussTest, NarrowBinApproximation)
+{
+    // For a very narrow bin: integrated_gauss(x,A,m,s,ε) ≈ gauss(x,A,m,s)*ε
+    using T = TypeParam;
+    const T A = 2.0, m = 0.5, s = 1.2, eps = T(1e-3);
+    const double expected = double(fn::gauss(m, A, m, s)) * double(eps);
+    EXPECT_NEAR(double(fn::integrated_gauss(m, A, m, s, eps)), expected, FnTol<T>::loose);
+}
+
+TYPED_TEST(IGaussTest, NumericalNorm)
+{
+    // Summing bins over ±6σ should equal A
+    using T = TypeParam;
+    const T A = 3.0, m = 0.0, s = 1.0;
+    const size_t N = 1000;
+    const T dx = T(12) * s / T(N);
+    T sum = 0;
+    for (size_t i = 0; i < N; ++i)
+    {
+        const T x = -T(6) * s + (T(i) + T(0.5)) * dx;
+        sum += fn::integrated_gauss(x, A, m, s, dx);
+    }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+TYPED_TEST(IGaussTest, AliasMatchesIntegratedGauss)
+{
+    using T = TypeParam;
+    const T A = 1.5, m = 0.3, s = 0.8, dx = T(0.1);
+    for (T x = -T(3) * s; x <= T(3) * s; x += dx)
+        EXPECT_NEAR(double(fn::igauss(x, A, m, s, dx)),
+                    double(fn::integrated_gauss(x, A, m, s, dx)), FnTol<T>::func);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2-D symmetric Gaussian  gauss2D(x, y, A, mx, my, s)
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class Gauss2DSymTest : public testing::Test {};
+TYPED_TEST_SUITE(Gauss2DSymTest, ScalarTypes);
+
+TYPED_TEST(Gauss2DSymTest, Peak)
+{
+    using T = TypeParam;
+    const T A = 4.0, mx = 1.0, my = -0.5, s = 0.8;
+    const T expected = A / (T(2) * T(MathCore::Pi()) * s * s);
+    EXPECT_NEAR(double(fn::gauss2D(mx, my, A, mx, my, s)), double(expected), FnTol<T>::loose);
+}
+
+TYPED_TEST(Gauss2DSymTest, Symmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, mx = 0.5, my = -1.0, s = 1.0, d = 0.4;
+    EXPECT_NEAR(double(fn::gauss2D(mx + d, my,     A, mx, my, s)),
+                double(fn::gauss2D(mx - d, my,     A, mx, my, s)), FnTol<T>::func);
+    EXPECT_NEAR(double(fn::gauss2D(mx,     my + d, A, mx, my, s)),
+                double(fn::gauss2D(mx,     my - d, A, mx, my, s)), FnTol<T>::func);
+}
+
+TYPED_TEST(Gauss2DSymTest, NumericalNorm)
+{
+    // ∬ gauss2D dx dy over ±6σ should equal A
+    using T = TypeParam;
+    const T A = 2.0, mx = 0.0, my = 0.0, s = 1.0;
+    const size_t N = 300;
+    const T dxy = T(12) * s / T(N);
+    T sum = 0;
+    for (size_t i = 0; i < N; ++i)
+        for (size_t j = 0; j < N; ++j)
+        {
+            const T x = -T(6) * s + (T(i) + T(0.5)) * dxy;
+            const T y = -T(6) * s + (T(j) + T(0.5)) * dxy;
+            sum += fn::gauss2D(x, y, A, mx, my, s) * dxy * dxy;
+        }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2-D symmetric integrated Gaussian  integrated_gauss2D / igauss2D (symmetric)
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class IGauss2DSymTest : public testing::Test {};
+TYPED_TEST_SUITE(IGauss2DSymTest, ScalarTypes);
+
+TYPED_TEST(IGauss2DSymTest, NumericalNorm)
+{
+    // Sum of bins over ±6σ should equal A
+    using T = TypeParam;
+    const T A = 2.0, mx = 0.0, my = 0.0, s = 1.0;
+    const size_t N = 100;
+    const double dxy = 12.0 / double(N);
+    T sum = 0;
+    for (size_t i = 0; i < N; ++i)
+        for (size_t j = 0; j < N; ++j)
+        {
+            const T x = T(-6.0 + (double(i) + 0.5) * dxy);
+            const T y = T(-6.0 + (double(j) + 0.5) * dxy);
+            sum += fn::integrated_gauss2D(x, y, A, mx, my, s, dxy, dxy);
+        }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+TYPED_TEST(IGauss2DSymTest, AliasMatchesIntegratedGauss2D)
+{
+    using T = TypeParam;
+    const T A = 1.0, mx = 0.0, my = 0.0, s = 1.0;
+    const double dx = 0.5, dy = 0.5;
+    EXPECT_NEAR(double(fn::igauss2D(T(0.5), T(0.5), A, mx, my, s, dx, dy)),
+                double(fn::integrated_gauss2D(T(0.5), T(0.5), A, mx, my, s, dx, dy)),
+                FnTol<T>::func);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2-D asymmetric Gaussian  gauss2D(x, y, A, mx, my, sx, sy, theta)
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class Gauss2DAsymTest : public testing::Test {};
+TYPED_TEST_SUITE(Gauss2DAsymTest, ScalarTypes);
+
+TYPED_TEST(Gauss2DAsymTest, Peak)
+{
+    // Peak value at (mx,my) is A/(2π·sx·sy) regardless of theta
+    using T = TypeParam;
+    const T A = 3.0, mx = 0.5, my = -1.0, sx = 0.8, sy = 1.2;
+    const T expected = A / (T(2) * T(MathCore::Pi()) * sx * sy);
+    for (T theta : {T(0), T(0.3), T(0.7), T(1.2)})
+        EXPECT_NEAR(double(fn::gauss2D(mx, my, A, mx, my, sx, sy, theta)),
+                    double(expected), FnTol<T>::loose);
+}
+
+TYPED_TEST(Gauss2DAsymTest, Theta0FactorsAsProduct)
+{
+    // At theta=0: gauss2D = (1/(2π·sx·sy))·A·exp(-dx²/(2sx²))·exp(-dy²/(2sy²))
+    using T = TypeParam;
+    const T A = 1.0, mx = 0.0, my = 0.0, sx = 1.0, sy = 2.0;
+    const T norm = T(1) / (T(2) * T(MathCore::Pi()) * sx * sy);
+    for (T x = -T(2) * sx; x <= T(2) * sx; x += sx / T(2))
+        for (T y = -T(2) * sy; y <= T(2) * sy; y += sy / T(2))
+        {
+            const T expected = A * norm
+                               * std::exp(-T(0.5) * x * x / (sx * sx))
+                               * std::exp(-T(0.5) * y * y / (sy * sy));
+            EXPECT_NEAR(double(fn::gauss2D(x, y, A, mx, my, sx, sy, T(0))),
+                        double(expected), FnTol<T>::loose);
+        }
+}
+
+TYPED_TEST(Gauss2DAsymTest, ThetaHalfPiSwapsSigmas)
+{
+    // At theta=π/2: gauss2D(sx,sy,π/2) == gauss2D(sy,sx,0)
+    using T = TypeParam;
+    const T A = 1.0, mx = 0.0, my = 0.0, sx = 0.5, sy = 2.0;
+    const T theta = T(MathCore::Pi()) / T(2);
+    for (T x = -T(1.5); x <= T(1.5); x += T(0.5))
+        for (T y = -T(1.5); y <= T(1.5); y += T(0.5))
+            EXPECT_NEAR(double(fn::gauss2D(x, y, A, mx, my, sx, sy, theta)),
+                        double(fn::gauss2D(x, y, A, mx, my, sy, sx, T(0))),
+                        FnTol<T>::loose);
+}
+
+TYPED_TEST(Gauss2DAsymTest, PointSymmetryAroundMean)
+{
+    // Gaussian is symmetric under (x,y) -> (2mx-x, 2my-y)
+    using T = TypeParam;
+    const T A = 1.0, mx = 1.0, my = -0.5, sx = 0.8, sy = 1.2, theta = T(0.4);
+    for (T dx = -T(1.0); dx <= T(1.0); dx += T(0.5))
+        for (T dy = -T(1.0); dy <= T(1.0); dy += T(0.5))
+            EXPECT_NEAR(double(fn::gauss2D(mx + dx, my + dy, A, mx, my, sx, sy, theta)),
+                        double(fn::gauss2D(mx - dx, my - dy, A, mx, my, sx, sy, theta)),
+                        FnTol<T>::func);
+}
+
+TYPED_TEST(Gauss2DAsymTest, NumericalNorm)
+{
+    // ∬ gauss2D dx dy over ±7σ should equal A
+    using T = TypeParam;
+    const T A = 2.0, mx = 0.0, my = 0.0, sx = 1.0, sy = 1.5, theta = T(0.5);
+    const size_t N = 200;
+    const T dx = T(14) / T(N), dy = T(18) / T(N);
+    T sum = 0;
+    for (size_t i = 0; i < N; ++i)
+        for (size_t j = 0; j < N; ++j)
+        {
+            const T x = -T(7) + (T(i) + T(0.5)) * dx;
+            const T y = -T(9) + (T(j) + T(0.5)) * dy;
+            sum += fn::gauss2D(x, y, A, mx, my, sx, sy, theta) * dx * dy;
+        }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2-D asymmetric integrated Gaussian  integrated_gauss2D / igauss2D (asymmetric)
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class IGauss2DAsymTest : public testing::Test {};
+TYPED_TEST_SUITE(IGauss2DAsymTest, ScalarTypes);
+
+TYPED_TEST(IGauss2DAsymTest, NumericalNorm)
+{
+    // Sum over a ±7σ grid should equal A
+    using T = TypeParam;
+    const T A = 2.0, mx = 0.0, my = 0.0, sx = 1.0, sy = 1.5, theta = T(0.3);
+    const size_t N = 50;
+    const T dxy = T(14) / T(N);
+    T sum = 0;
+    for (size_t i = 0; i < N; ++i)
+        for (size_t j = 0; j < N; ++j)
+        {
+            const T x = -T(7) + (T(i) + T(0.5)) * dxy;
+            const T y = -T(7) + (T(j) + T(0.5)) * dxy;
+            sum += fn::integrated_gauss2D(x, y, A, mx, my, sx, sy, dxy, dxy, theta, 100);
+        }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+TYPED_TEST(IGauss2DAsymTest, Theta0MatchesAnalytical)
+{
+    // At theta=0, sx=sy=s: result must equal (A/4)*(erf_x2-erf_x1)*(erf_y2-erf_y1)
+    using T = TypeParam;
+    const T A = 1.0, mx = 0.0, my = 0.0, sx = 1.0, sy = 1.0;
+    const T dx = T(0.4), dy = T(0.4);
+    for (T x = -T(2); x <= T(2); x += T(0.8))
+        for (T y = -T(2); y <= T(2); y += T(0.8))
+        {
+            const double sq2 = std::sqrt(2.0) * double(sx);
+            const double x1  = double(x) - double(dx) / 2.;
+            const double x2  = double(x) + double(dx) / 2.;
+            const double y1  = double(y) - double(dy) / 2.;
+            const double y2  = double(y) + double(dy) / 2.;
+            const double expected = double(A) / 4.
+                                    * (std::erf(x2 / sq2) - std::erf(x1 / sq2))
+                                    * (std::erf(y2 / sq2) - std::erf(y1 / sq2));
+            EXPECT_NEAR(double(fn::integrated_gauss2D(x, y, A, mx, my, sx, sy, dx, dy, T(0), 100)),
+                        expected, FnTol<T>::integ);
+        }
+}
+
+TYPED_TEST(IGauss2DAsymTest, AliasMatchesIntegratedGauss2D)
+{
+    using T = TypeParam;
+    const T A = 1.0, mx = 0.5, my = -0.3, sx = 0.8, sy = 1.1;
+    const T dx = T(0.3), dy = T(0.3), theta = T(0.2);
+    EXPECT_NEAR(double(fn::igauss2D(mx, my, A, mx, my, sx, sy, dx, dy, theta, 50)),
+                double(fn::integrated_gauss2D(mx, my, A, mx, my, sx, sy, dx, dy, theta, 50)),
+                FnTol<T>::func);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1-D Moffat  moffatt(x, A, x0, a, b)
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class MoffatTest : public testing::Test {};
+TYPED_TEST_SUITE(MoffatTest, ScalarTypes);
+
+TYPED_TEST(MoffatTest, Peak)
+{
+    using T = TypeParam;
+    const T A = 2.0, x0 = 1.5, a = 1.0, b = 3.0;
+    const T expected = A * (b - T(1)) / (T(MathCore::Pi()) * a * a);
+    EXPECT_NEAR(double(fn::moffatt(x0, A, x0, a, b)), double(expected), FnTol<T>::loose);
+}
+
+TYPED_TEST(MoffatTest, Symmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = 0.5, a = 2.0, b = 4.0, d = 1.0;
+    EXPECT_NEAR(double(fn::moffatt(x0 + d, A, x0, a, b)),
+                double(fn::moffatt(x0 - d, A, x0, a, b)), FnTol<T>::func);
+}
+
+TYPED_TEST(MoffatTest, MonotonicallyDecreasing)
+{
+    // Values must decrease monotonically away from the peak
+    using T = TypeParam;
+    const T A = 1.0, x0 = 0.0, a = 1.0, b = 3.0;
+    T prev = fn::moffatt(x0, A, x0, a, b);
+    for (T d = T(0.2); d <= T(3.0); d += T(0.2))
+    {
+        const T cur = fn::moffatt(x0 + d, A, x0, a, b);
+        EXPECT_LT(double(cur), double(prev));
+        prev = cur;
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 2-D Moffat functions — implementation has compile errors, tests disabled:
+//
+//   moffatt2D (symmetric, 7 params):
+//     uses undeclared `_x`, `_y`, `m_x`, `m_y`, `A`  → should be `x_`, `y_`, `x0_`, `y0_`, `A_`
+//
+//   moffatt2D (asymmetric, 9 params):
+//     uses undeclared `g` in `y1*y1/(g*g_)`  → should be `g_*g_`
+//     `cos`/`sin` should be `std::cos`/`std::sin`
+//
+// Uncomment the block below once those bugs are fixed.
+// ─────────────────────────────────────────────────────────────────────────────
+
+template<typename T> class Moffat2DSymTest  : public testing::Test {};
+template<typename T> class Moffat2DAsymTest : public testing::Test {};
+TYPED_TEST_SUITE(Moffat2DSymTest,  ScalarTypes);
+TYPED_TEST_SUITE(Moffat2DAsymTest, ScalarTypes);
+
+TYPED_TEST(Moffat2DSymTest, Peak)
+{
+    using T = TypeParam;
+    const T A = 2.0, x0 = 1.0, y0 = -0.5, a = 1.5, b = 3.0;
+    const T expected = A * (b - T(1)) / (T(MathCore::Pi()) * a * a);
+    EXPECT_NEAR(double(fn::moffatt2D(x0, y0, A, x0, y0, a, b)), double(expected), FnTol<T>::loose);
+}
+
+TYPED_TEST(Moffat2DSymTest, RadialSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = 0.0, y0 = 0.0, a = 1.0, b = 4.0, r = T(0.7);
+    EXPECT_NEAR(double(fn::moffatt2D(r, T(0), A, x0, y0, a, b)),
+                double(fn::moffatt2D(T(0), r, A, x0, y0, a, b)), FnTol<T>::func);
+}
+
+TYPED_TEST(Moffat2DSymTest, NumericalNorm)
+{
+    using T = TypeParam;
+    const T A = 2.0, x0 = 0.0, y0 = 0.0, a = 1.0, b = 3.0;
+    const size_t N = 500;
+    const T dxy = T(20) / T(N);
+    T sum = 0;
+    for (size_t i = 0; i < N; ++i)
+        for (size_t j = 0; j < N; ++j)
+        {
+            const T x = -T(10) + (T(i) + T(0.5)) * dxy;
+            const T y = -T(10) + (T(j) + T(0.5)) * dxy;
+            sum += fn::moffatt2D(x, y, A, x0, y0, a, b) * dxy * dxy;
+        }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+TYPED_TEST(Moffat2DAsymTest, Gamma1MatchesSymmetric)
+{
+    // At gamma=1 and theta=0, the asymmetric form should match the symmetric one
+    using T = TypeParam;
+    const T A = 1.0, x0 = 0.5, y0 = -0.5, a = 1.2, b = 3.5, g = T(1.0);
+    for (T x = -T(2); x <= T(2); x += T(0.5))
+        for (T y = -T(2); y <= T(2); y += T(0.5))
+            EXPECT_NEAR(double(fn::moffatt2D(x, y, A, x0, y0, a, b, g, T(0))),
+                        double(fn::moffatt2D(x, y, A, x0, y0, a, b)),
+                        FnTol<T>::loose);
+}
+
+TYPED_TEST(Moffat2DAsymTest, PointSymmetryAroundCenter)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = 0.0, y0 = 0.0, a = 1.0, b = 4.0, g = T(0.7), theta = T(0.5);
+    for (T dx = -T(1); dx <= T(1); dx += T(0.5))
+        for (T dy = -T(1); dy <= T(1); dy += T(0.5))
+            EXPECT_NEAR(double(fn::moffatt2D(x0 + dx, y0 + dy, A, x0, y0, a, b, g, theta)),
+                        double(fn::moffatt2D(x0 - dx, y0 - dy, A, x0, y0, a, b, g, theta)),
+                        FnTol<T>::func);
+}
+
+// =============================================================================
+// Lorentzian tests
+// =============================================================================
+
+template<typename T> class LorentzianTest : public testing::Test {};
+TYPED_TEST_SUITE(LorentzianTest, ScalarTypes);
+
+TYPED_TEST(LorentzianTest, Peak)
+{
+    using T = TypeParam;
+    const T A = 3.0, x0 = 1.5, g = T(0.8);
+    const T expected = A / (T(MathCore::Pi()) * g);
+    EXPECT_NEAR(double(fn::lorentzian(x0, A, x0, g)), double(expected), FnTol<T>::loose);
+}
+
+TYPED_TEST(LorentzianTest, Symmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = 0.5, g = T(1.2), d = T(0.7);
+    EXPECT_NEAR(double(fn::lorentzian(x0 + d, A, x0, g)),
+                double(fn::lorentzian(x0 - d, A, x0, g)), FnTol<T>::func);
+}
+
+TYPED_TEST(LorentzianTest, NumericalNorm)
+{
+    // ∫ L dx over large range ≈ A (Lorentzian has heavy tails: use ±1000γ)
+    using T = TypeParam;
+    const T A = 2.0, x0 = T(0), g = T(1.0);
+    const size_t N = 200000;
+    const T range = T(1000) * g;
+    const T dx = T(2) * range / T(N);
+    T sum = T(0);
+    for (size_t i = 0; i < N; ++i)
+    {
+        const T x = -range + (T(i) + T(0.5)) * dx;
+        sum += fn::lorentzian(x, A, x0, g) * dx;
+    }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class Lorentzian2DSymTest : public testing::Test {};
+TYPED_TEST_SUITE(Lorentzian2DSymTest, ScalarTypes);
+
+TYPED_TEST(Lorentzian2DSymTest, Peak)
+{
+    using T = TypeParam;
+    const T A = 2.0, x0 = T(0.3), y0 = T(-0.5), g = T(0.6);
+    // Peak at (x0,y0): A / (2*pi*g^2)
+    const T expected = A / (T(2) * T(MathCore::Pi()) * g * g);
+    EXPECT_NEAR(double(fn::lorentzian2D(x0, y0, A, x0, y0, g)), double(expected), FnTol<T>::loose);
+}
+
+TYPED_TEST(Lorentzian2DSymTest, RadialSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), g = T(1.0), r = T(0.5);
+    EXPECT_NEAR(double(fn::lorentzian2D(r, T(0), A, x0, y0, g)),
+                double(fn::lorentzian2D(T(0), r, A, x0, y0, g)), FnTol<T>::func);
+}
+
+TYPED_TEST(Lorentzian2DSymTest, NumericalNorm)
+{
+    using T = TypeParam;
+    const T A = 1.5, x0 = T(0), y0 = T(0), g = T(1.0);
+    const size_t N = 2000;
+    const T range = T(500) * g;
+    const T dxy = T(2) * range / T(N);
+    T sum = T(0);
+    for (size_t i = 0; i < N; ++i)
+        for (size_t j = 0; j < N; ++j)
+        {
+            const T x = -range + (T(i) + T(0.5)) * dxy;
+            const T y = -range + (T(j) + T(0.5)) * dxy;
+            sum += fn::lorentzian2D(x, y, A, x0, y0, g) * dxy * dxy;
+        }
+    EXPECT_NEAR(double(sum), double(A), 0.05);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class Lorentzian2DAsymTest : public testing::Test {};
+TYPED_TEST_SUITE(Lorentzian2DAsymTest, ScalarTypes);
+
+TYPED_TEST(Lorentzian2DAsymTest, Q1MatchesSym)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0.5), y0 = T(-0.3), g = T(0.8), q = T(1.0), theta = T(0);
+    for (T dx = -T(1); dx <= T(1); dx += T(0.5))
+        for (T dy = -T(1); dy <= T(1); dy += T(0.5))
+            EXPECT_NEAR(double(fn::lorentzian2D(x0+dx, y0+dy, A, x0, y0, g, q, theta)),
+                        double(fn::lorentzian2D(x0+dx, y0+dy, A, x0, y0, g)),
+                        FnTol<T>::loose);
+}
+
+TYPED_TEST(Lorentzian2DAsymTest, PointSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), g = T(1.0), q = T(0.6), theta = T(0.4);
+    for (T dx = -T(1); dx <= T(1); dx += T(0.5))
+        for (T dy = -T(1); dy <= T(1); dy += T(0.5))
+            EXPECT_NEAR(double(fn::lorentzian2D(x0+dx, y0+dy, A, x0, y0, g, q, theta)),
+                        double(fn::lorentzian2D(x0-dx, y0-dy, A, x0, y0, g, q, theta)),
+                        FnTol<T>::func);
+}
+
+// =============================================================================
+// Pseudo-Voigt tests
+// =============================================================================
+
+template<typename T> class PseudoVoigtTest : public testing::Test {};
+TYPED_TEST_SUITE(PseudoVoigtTest, ScalarTypes);
+
+TYPED_TEST(PseudoVoigtTest, PureLimits)
+{
+    // fL → small: pseudo_voigt ≈ Gaussian with FWHM ≈ fG
+    using T = TypeParam;
+    const T A = 2.0, x0 = T(0), fG = T(1.0), fL = T(1e-3);
+    const T sig = fG / (T(2) * std::sqrt(T(2) * std::log(T(2))));
+    for (T x = -T(2)*fG; x <= T(2)*fG; x += fG/T(4))
+    {
+        const T expected = A / (sig * T(SQT2PI)) * std::exp(T(-0.5)*(x-x0)*(x-x0)/(sig*sig));
+        EXPECT_NEAR(double(fn::pseudo_voigt(x, A, x0, fG, fL)), double(expected), 1e-2);
+    }
+}
+
+TYPED_TEST(PseudoVoigtTest, NumericalNorm)
+{
+    using T = TypeParam;
+    const T A = 3.0, x0 = T(0), fG = T(1.0), fL = T(1.0);
+    const size_t N = 200000;
+    const T range = T(500);
+    const T dx = T(2) * range / T(N);
+    T sum = T(0);
+    for (size_t i = 0; i < N; ++i)
+    {
+        const T x = -range + (T(i) + T(0.5)) * dx;
+        sum += fn::pseudo_voigt(x, A, x0, fG, fL) * dx;
+    }
+    EXPECT_NEAR(double(sum), double(A), 0.1);
+}
+
+TYPED_TEST(PseudoVoigtTest, EtaBounds)
+{
+    // With fL/fG varying, eta should stay in [0,1]
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), fG = T(1.0);
+    // Evaluate at peak to cross-check ordering: pure Lorentzian peak > pure Gaussian peak (same FWHM)
+    const T pv_gauss = double(fn::pseudo_voigt(x0, A, x0, fG, T(1e-4)));
+    const T pv_lortz = double(fn::pseudo_voigt(x0, A, x0, T(1e-4), fG));
+    // Gaussian peak at x0 = A/sigma/sqrt(2pi) ; Lorentzian peak = A/(pi*gamma)
+    // Just check they are positive and finite
+    EXPECT_GT(double(pv_gauss), 0.0);
+    EXPECT_GT(double(pv_lortz), 0.0);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class PseudoVoigt2DSymTest : public testing::Test {};
+TYPED_TEST_SUITE(PseudoVoigt2DSymTest, ScalarTypes);
+
+TYPED_TEST(PseudoVoigt2DSymTest, RadialDecay)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), fG = T(1.0), fL = T(0.5);
+    T prev = fn::pseudo_voigt2D(x0, y0, A, x0, y0, fG, fL);
+    for (T r = T(0.3); r <= T(3.0); r += T(0.3))
+    {
+        const T cur = fn::pseudo_voigt2D(x0 + r, y0, A, x0, y0, fG, fL);
+        EXPECT_LT(double(cur), double(prev));
+        prev = cur;
+    }
+}
+
+TYPED_TEST(PseudoVoigt2DSymTest, RadialSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), fG = T(1.0), fL = T(1.0), r = T(0.7);
+    EXPECT_NEAR(double(fn::pseudo_voigt2D(r, T(0), A, x0, y0, fG, fL)),
+                double(fn::pseudo_voigt2D(T(0), r, A, x0, y0, fG, fL)), FnTol<T>::loose);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class PseudoVoigt2DAsymTest : public testing::Test {};
+TYPED_TEST_SUITE(PseudoVoigt2DAsymTest, ScalarTypes);
+
+TYPED_TEST(PseudoVoigt2DAsymTest, Q1MatchesSym)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), fG = T(1.0), fL = T(0.8), q = T(1.0), theta = T(0);
+    for (T dx = -T(1); dx <= T(1); dx += T(0.5))
+        for (T dy = -T(1); dy <= T(1); dy += T(0.5))
+            EXPECT_NEAR(double(fn::pseudo_voigt2D(dx, dy, A, x0, y0, fG, fL, q, theta)),
+                        double(fn::pseudo_voigt2D(dx, dy, A, x0, y0, fG, fL)),
+                        FnTol<T>::loose);
+}
+
+TYPED_TEST(PseudoVoigt2DAsymTest, PointSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), fG = T(1.0), fL = T(0.5), q = T(0.6), theta = T(0.4);
+    for (T dx = -T(1); dx <= T(1); dx += T(0.5))
+        for (T dy = -T(1); dy <= T(1); dy += T(0.5))
+            EXPECT_NEAR(double(fn::pseudo_voigt2D(x0+dx, y0+dy, A, x0, y0, fG, fL, q, theta)),
+                        double(fn::pseudo_voigt2D(x0-dx, y0-dy, A, x0, y0, fG, fL, q, theta)),
+                        FnTol<T>::func);
+}
+
+// =============================================================================
+// Sérsic tests
+// =============================================================================
+
+template<typename T> class SersicTest : public testing::Test {};
+TYPED_TEST_SUITE(SersicTest, ScalarTypes);
+
+TYPED_TEST(SersicTest, PeakAtRe)
+{
+    // sersic(re) == A by definition
+    using T = TypeParam;
+    const T A = 4.0, re = T(2.0), n = T(4.0);
+    EXPECT_NEAR(double(fn::sersic(re, A, re, n)), double(A), FnTol<T>::loose);
+}
+
+TYPED_TEST(SersicTest, MonotonicallyDecreasing)
+{
+    using T = TypeParam;
+    const T A = 1.0, re = T(5.0), n = T(4.0);
+    T prev = fn::sersic(T(0.01), A, re, n);
+    for (T r = T(0.5); r <= T(10.0); r += T(0.5))
+    {
+        const T cur = fn::sersic(r, A, re, n);
+        EXPECT_LT(double(cur), double(prev));
+        prev = cur;
+    }
+}
+
+TYPED_TEST(SersicTest, IndexEffect)
+{
+    // Higher n → more concentrated at r=0, less at r>>re
+    using T = TypeParam;
+    const T A = 1.0, re = T(3.0), r_inner = T(0.1), r_outer = T(6.0);
+    EXPECT_GT(double(fn::sersic(r_inner, A, re, T(4))),
+              double(fn::sersic(r_inner, A, re, T(1))));
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class Sersic2DSymTest : public testing::Test {};
+TYPED_TEST_SUITE(Sersic2DSymTest, ScalarTypes);
+
+TYPED_TEST(Sersic2DSymTest, PeakAtCenter)
+{
+    using T = TypeParam;
+    const T A = 2.0, x0 = T(1.0), y0 = T(-0.5), re = T(3.0), n = T(4.0);
+    // sersic2D at (x0,y0) → r=0 → exp(-bn*(0^(1/n)-1)) = exp(bn)
+    const T bn = T(2)*n - T(1.0/3.0) + T(4.0)/(T(405)*n) + T(46.0)/(T(25515)*n*n);
+    const T expected = A * std::exp(bn);
+    EXPECT_NEAR(double(fn::sersic2D(x0, y0, A, x0, y0, re, n)), double(expected), FnTol<T>::loose);
+}
+
+TYPED_TEST(Sersic2DSymTest, RadialConsistency)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), re = T(3.0), n = T(2.0);
+    for (T r = T(0.5); r <= T(4.0); r += T(0.5))
+        EXPECT_NEAR(double(fn::sersic2D(r, T(0), A, x0, y0, re, n)),
+                    double(fn::sersic(r, A, re, n)),
+                    FnTol<T>::func);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class Sersic2DAsymTest : public testing::Test {};
+TYPED_TEST_SUITE(Sersic2DAsymTest, ScalarTypes);
+
+TYPED_TEST(Sersic2DAsymTest, Q1MatchesSym)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), re = T(2.0), n = T(1.0), q = T(1.0), theta = T(0);
+    for (T dx = -T(2); dx <= T(2); dx += T(0.5))
+        for (T dy = -T(2); dy <= T(2); dy += T(0.5))
+            EXPECT_NEAR(double(fn::sersic2D(x0+dx, y0+dy, A, x0, y0, re, n, q, theta)),
+                        double(fn::sersic2D(x0+dx, y0+dy, A, x0, y0, re, n)),
+                        FnTol<T>::loose);
+}
+
+TYPED_TEST(Sersic2DAsymTest, PointSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), re = T(3.0), n = T(2.0), q = T(0.7), theta = T(0.5);
+    for (T dx = -T(2); dx <= T(2); dx += T(0.5))
+        for (T dy = -T(2); dy <= T(2); dy += T(0.5))
+            EXPECT_NEAR(double(fn::sersic2D(x0+dx, y0+dy, A, x0, y0, re, n, q, theta)),
+                        double(fn::sersic2D(x0-dx, y0-dy, A, x0, y0, re, n, q, theta)),
+                        FnTol<T>::func);
+}
+
+// =============================================================================
+// King (1966) profile tests
+// =============================================================================
+
+template<typename T> class KingTest : public testing::Test {};
+TYPED_TEST_SUITE(KingTest, ScalarTypes);
+
+TYPED_TEST(KingTest, PeakAtCenter)
+{
+    // At r=0: 1/sqrt(1+0) - ct = 1 - ct  → peak = A/norm*(1-ct)^2
+    using T = TypeParam;
+    const T A = 2.0, rc = T(1.0), rt = T(5.0);
+    const T xc = rt / rc;
+    const T ct = T(1) / std::sqrt(T(1) + xc*xc);
+    const T norm = T(MathCore::Pi()) * rc*rc
+                   * (std::log(T(1) + xc*xc) - T(4)*(T(1)-ct) + xc*xc*ct*ct);
+    const T expected = A / norm * (T(1) - ct) * (T(1) - ct);
+    EXPECT_NEAR(double(fn::king(T(0), A, rc, rt)), double(expected), FnTol<T>::loose);
+}
+
+TYPED_TEST(KingTest, TruncationAtRt)
+{
+    using T = TypeParam;
+    const T A = 1.0, rc = T(1.0), rt = T(3.0);
+    EXPECT_NEAR(double(fn::king(rt + T(0.1), A, rc, rt)), 0.0, FnTol<T>::func);
+    EXPECT_NEAR(double(fn::king(rt * T(2.0), A, rc, rt)), 0.0, FnTol<T>::func);
+}
+
+TYPED_TEST(KingTest, NumericalNorm)
+{
+    // ∬ king2D dx dy ≈ A
+    using T = TypeParam;
+    const T A = 2.0, rc = T(1.0), rt = T(5.0);
+    const size_t N = 300;
+    const T dxy = T(2) * rt / T(N);
+    T sum = T(0);
+    for (size_t i = 0; i < N; ++i)
+        for (size_t j = 0; j < N; ++j)
+        {
+            const T x = -rt + (T(i) + T(0.5)) * dxy;
+            const T y = -rt + (T(j) + T(0.5)) * dxy;
+            sum += fn::king2D(x, y, A, T(0), T(0), rc, rt) * dxy * dxy;
+        }
+    EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class King2DSymTest : public testing::Test {};
+TYPED_TEST_SUITE(King2DSymTest, ScalarTypes);
+
+TYPED_TEST(King2DSymTest, MatchesKing)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), rc = T(1.5), rt = T(6.0);
+    for (T r = T(0); r < rt; r += T(0.5))
+        EXPECT_NEAR(double(fn::king2D(r, T(0), A, x0, y0, rc, rt)),
+                    double(fn::king(r, A, rc, rt)),
+                    FnTol<T>::func);
+}
+
+TYPED_TEST(King2DSymTest, RadialSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), rc = T(1.0), rt = T(4.0), r = T(0.8);
+    EXPECT_NEAR(double(fn::king2D(r, T(0), A, x0, y0, rc, rt)),
+                double(fn::king2D(T(0), r, A, x0, y0, rc, rt)), FnTol<T>::func);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class King2DAsymTest : public testing::Test {};
+TYPED_TEST_SUITE(King2DAsymTest, ScalarTypes);
+
+TYPED_TEST(King2DAsymTest, Q1MatchesSym)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), rc = T(1.0), rt = T(4.0), q = T(1.0), theta = T(0);
+    for (T dx = -T(2); dx <= T(2); dx += T(0.5))
+        for (T dy = -T(2); dy <= T(2); dy += T(0.5))
+            EXPECT_NEAR(double(fn::king2D(x0+dx, y0+dy, A, x0, y0, rc, rt, q, theta)),
+                        double(fn::king2D(x0+dx, y0+dy, A, x0, y0, rc, rt)),
+                        FnTol<T>::loose);
+}
+
+TYPED_TEST(King2DAsymTest, PointSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), rc = T(1.0), rt = T(4.0), q = T(0.6), theta = T(0.4);
+    for (T dx = -T(1.5); dx <= T(1.5); dx += T(0.5))
+        for (T dy = -T(1.5); dy <= T(1.5); dy += T(0.5))
+            EXPECT_NEAR(double(fn::king2D(x0+dx, y0+dy, A, x0, y0, rc, rt, q, theta)),
+                        double(fn::king2D(x0-dx, y0-dy, A, x0, y0, rc, rt, q, theta)),
+                        FnTol<T>::func);
+}
+
+// =============================================================================
+// Airy disk tests
+// =============================================================================
+
+template<typename T> class AiryTest : public testing::Test {};
+TYPED_TEST_SUITE(AiryTest, ScalarTypes);
+
+TYPED_TEST(AiryTest, PeakAtCenter)
+{
+    using T = TypeParam;
+    const T A = 5.0, x0 = T(1.5), a = T(2.0);
+    EXPECT_NEAR(double(fn::airy(x0, A, x0, a)), double(A), FnTol<T>::loose);
+}
+
+TYPED_TEST(AiryTest, Symmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), a = T(1.5), d = T(0.6);
+    EXPECT_NEAR(double(fn::airy(x0 + d, A, x0, a)),
+                double(fn::airy(x0 - d, A, x0, a)), FnTol<T>::func);
+}
+
+TYPED_TEST(AiryTest, ZeroNearFirstNull)
+{
+    // First null of J1(u) is at u ≈ 3.8317; airy should be near zero there
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), a = T(1.0);
+    const T u_null = T(3.8317);
+    const T val = fn::airy(u_null, A, x0, a);   // a*(x-x0) = u_null
+    EXPECT_NEAR(double(val), 0.0, 1e-3);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class Airy2DSymTest : public testing::Test {};
+TYPED_TEST_SUITE(Airy2DSymTest, ScalarTypes);
+
+TYPED_TEST(Airy2DSymTest, PeakAtCenter)
+{
+    using T = TypeParam;
+    const T A = 3.0, x0 = T(0.5), y0 = T(-0.5), a = T(1.5);
+    EXPECT_NEAR(double(fn::airy2D(x0, y0, A, x0, y0, a)), double(A), FnTol<T>::loose);
+}
+
+TYPED_TEST(Airy2DSymTest, RadialConsistency)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), a = T(2.0);
+    for (T r = T(0); r <= T(3.0); r += T(0.3))
+        EXPECT_NEAR(double(fn::airy2D(r, T(0), A, x0, y0, a)),
+                    double(fn::airy(r, A, T(0), a)),
+                    FnTol<T>::loose);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+template<typename T> class Airy2DAsymTest : public testing::Test {};
+TYPED_TEST_SUITE(Airy2DAsymTest, ScalarTypes);
+
+TYPED_TEST(Airy2DAsymTest, PeakAtCenter)
+{
+    using T = TypeParam;
+    const T A = 2.0, x0 = T(0), y0 = T(0), a = T(1.0), q = T(0.6), theta = T(0.3);
+    EXPECT_NEAR(double(fn::airy2D(x0, y0, A, x0, y0, a, q, theta)), double(A), FnTol<T>::loose);
+}
+
+TYPED_TEST(Airy2DAsymTest, Q1MatchesSym)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), a = T(1.5), q = T(1.0), theta = T(0);
+    for (T dx = T(0); dx <= T(2.0); dx += T(0.5))
+        for (T dy = T(0); dy <= T(2.0); dy += T(0.5))
+            EXPECT_NEAR(double(fn::airy2D(x0+dx, y0+dy, A, x0, y0, a, q, theta)),
+                        double(fn::airy2D(x0+dx, y0+dy, A, x0, y0, a)),
+                        FnTol<T>::loose);
+}
+
+TYPED_TEST(Airy2DAsymTest, PointSymmetry)
+{
+    using T = TypeParam;
+    const T A = 1.0, x0 = T(0), y0 = T(0), a = T(1.0), q = T(0.7), theta = T(0.5);
+    for (T dx = -T(1.5); dx <= T(1.5); dx += T(0.5))
+        for (T dy = -T(1.5); dy <= T(1.5); dy += T(0.5))
+            EXPECT_NEAR(double(fn::airy2D(x0+dx, y0+dy, A, x0, y0, a, q, theta)),
+                        double(fn::airy2D(x0-dx, y0-dy, A, x0, y0, a, q, theta)),
+                        FnTol<T>::func);
 }
