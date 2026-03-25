@@ -1136,36 +1136,36 @@ TYPED_TEST(IGauss2DAsymTest, AliasMatchesIntegratedGauss2D)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 1-D Moffat  moffatt(x, A, x0, a, b)
+// 1-D Moffat  moffat(x, A, x0, a, b)
 // ─────────────────────────────────────────────────────────────────────────────
-template<typename T> class MoffatTest : public testing::Test {};
-TYPED_TEST_SUITE(MoffatTest, ScalarTypes);
+template<typename T> class moffatest : public testing::Test {};
+TYPED_TEST_SUITE(moffatest, ScalarTypes);
 
-TYPED_TEST(MoffatTest, Peak)
+TYPED_TEST(moffatest, Peak)
 {
     using T = TypeParam;
     const T A = 2.0, x0 = 1.5, a = 1.0, b = 3.0;
     const T expected = A * (b - T(1)) / (T(MathCore::Pi()) * a * a);
-    EXPECT_NEAR(double(fn::moffatt(x0, A, x0, a, b)), double(expected), FnTol<T>::loose);
+    EXPECT_NEAR(double(fn::moffat(x0, A, x0, a, b)), double(expected), FnTol<T>::loose);
 }
 
-TYPED_TEST(MoffatTest, Symmetry)
+TYPED_TEST(moffatest, Symmetry)
 {
     using T = TypeParam;
     const T A = 1.0, x0 = 0.5, a = 2.0, b = 4.0, d = 1.0;
-    EXPECT_NEAR(double(fn::moffatt(x0 + d, A, x0, a, b)),
-                double(fn::moffatt(x0 - d, A, x0, a, b)), FnTol<T>::func);
+    EXPECT_NEAR(double(fn::moffat(x0 + d, A, x0, a, b)),
+                double(fn::moffat(x0 - d, A, x0, a, b)), FnTol<T>::func);
 }
 
-TYPED_TEST(MoffatTest, MonotonicallyDecreasing)
+TYPED_TEST(moffatest, MonotonicallyDecreasing)
 {
     // Values must decrease monotonically away from the peak
     using T = TypeParam;
     const T A = 1.0, x0 = 0.0, a = 1.0, b = 3.0;
-    T prev = fn::moffatt(x0, A, x0, a, b);
+    T prev = fn::moffat(x0, A, x0, a, b);
     for (T d = T(0.2); d <= T(3.0); d += T(0.2))
     {
-        const T cur = fn::moffatt(x0 + d, A, x0, a, b);
+        const T cur = fn::moffat(x0 + d, A, x0, a, b);
         EXPECT_LT(double(cur), double(prev));
         prev = cur;
     }
@@ -1174,10 +1174,10 @@ TYPED_TEST(MoffatTest, MonotonicallyDecreasing)
 // ─────────────────────────────────────────────────────────────────────────────
 // 2-D Moffat functions — implementation has compile errors, tests disabled:
 //
-//   moffatt2D (symmetric, 7 params):
+//   moffat2D (symmetric, 7 params):
 //     uses undeclared `_x`, `_y`, `m_x`, `m_y`, `A`  → should be `x_`, `y_`, `x0_`, `y0_`, `A_`
 //
-//   moffatt2D (asymmetric, 9 params):
+//   moffat2D (asymmetric, 9 params):
 //     uses undeclared `g` in `y1*y1/(g*g_)`  → should be `g_*g_`
 //     `cos`/`sin` should be `std::cos`/`std::sin`
 //
@@ -1194,15 +1194,15 @@ TYPED_TEST(Moffat2DSymTest, Peak)
     using T = TypeParam;
     const T A = 2.0, x0 = 1.0, y0 = -0.5, a = 1.5, b = 3.0;
     const T expected = A * (b - T(1)) / (T(MathCore::Pi()) * a * a);
-    EXPECT_NEAR(double(fn::moffatt2D(x0, y0, A, x0, y0, a, b)), double(expected), FnTol<T>::loose);
+    EXPECT_NEAR(double(fn::moffat2D(x0, y0, A, x0, y0, a, b)), double(expected), FnTol<T>::loose);
 }
 
 TYPED_TEST(Moffat2DSymTest, RadialSymmetry)
 {
     using T = TypeParam;
     const T A = 1.0, x0 = 0.0, y0 = 0.0, a = 1.0, b = 4.0, r = T(0.7);
-    EXPECT_NEAR(double(fn::moffatt2D(r, T(0), A, x0, y0, a, b)),
-                double(fn::moffatt2D(T(0), r, A, x0, y0, a, b)), FnTol<T>::func);
+    EXPECT_NEAR(double(fn::moffat2D(r, T(0), A, x0, y0, a, b)),
+                double(fn::moffat2D(T(0), r, A, x0, y0, a, b)), FnTol<T>::func);
 }
 
 TYPED_TEST(Moffat2DSymTest, NumericalNorm)
@@ -1217,7 +1217,7 @@ TYPED_TEST(Moffat2DSymTest, NumericalNorm)
         {
             const T x = -T(10) + (T(i) + T(0.5)) * dxy;
             const T y = -T(10) + (T(j) + T(0.5)) * dxy;
-            sum += fn::moffatt2D(x, y, A, x0, y0, a, b) * dxy * dxy;
+            sum += fn::moffat2D(x, y, A, x0, y0, a, b) * dxy * dxy;
         }
     EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
 }
@@ -1229,8 +1229,8 @@ TYPED_TEST(Moffat2DAsymTest, Gamma1MatchesSymmetric)
     const T A = 1.0, x0 = 0.5, y0 = -0.5, a = 1.2, b = 3.5, g = T(1.0);
     for (T x = -T(2); x <= T(2); x += T(0.5))
         for (T y = -T(2); y <= T(2); y += T(0.5))
-            EXPECT_NEAR(double(fn::moffatt2D(x, y, A, x0, y0, a, b, g, T(0))),
-                        double(fn::moffatt2D(x, y, A, x0, y0, a, b)),
+            EXPECT_NEAR(double(fn::moffat2D(x, y, A, x0, y0, a, b, g, T(0))),
+                        double(fn::moffat2D(x, y, A, x0, y0, a, b)),
                         FnTol<T>::loose);
 }
 
@@ -1240,8 +1240,8 @@ TYPED_TEST(Moffat2DAsymTest, PointSymmetryAroundCenter)
     const T A = 1.0, x0 = 0.0, y0 = 0.0, a = 1.0, b = 4.0, g = T(0.7), theta = T(0.5);
     for (T dx = -T(1); dx <= T(1); dx += T(0.5))
         for (T dy = -T(1); dy <= T(1); dy += T(0.5))
-            EXPECT_NEAR(double(fn::moffatt2D(x0 + dx, y0 + dy, A, x0, y0, a, b, g, theta)),
-                        double(fn::moffatt2D(x0 - dx, y0 - dy, A, x0, y0, a, b, g, theta)),
+            EXPECT_NEAR(double(fn::moffat2D(x0 + dx, y0 + dy, A, x0, y0, a, b, g, theta)),
+                        double(fn::moffat2D(x0 - dx, y0 - dy, A, x0, y0, a, b, g, theta)),
                         FnTol<T>::func);
 }
 

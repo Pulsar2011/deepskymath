@@ -437,7 +437,7 @@ namespace DST
              * @return U 
              */
             template<typename U>
-            U moffatt ( const U& x_, const U& A_, const U& x0_, const U& a_, const U& b_ )
+            U moffat ( const U& x_, const U& A_, const U& x0_, const U& a_, const U& b_ )
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::moffat_distribution] Unsuported datatype or data structure\033[0m");
@@ -461,13 +461,13 @@ namespace DST
              * @return U 
              */
             template<typename U>
-            U moffatt2D ( const U& x_,const U& y_, const U& A_, const U& x0_, const U& y0_, const U& a_, const U& b_ )
+            U moffat2D ( const U& x_,const U& y_, const U& A_, const U& x0_, const U& y0_, const U& a_, const U& b_ )
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::normal_distribution] Unsuported datatype or data structure\033[0m");
 
                 const U r = std::sqrt( (x_ - x0_)*(x_ - x0_) + (y_ - y0_)*(y_ - y0_) );
-                return moffatt<U>( r, A_, 0, a_, b_ );
+                return moffat<U>( r, A_, 0, a_, b_ );
             }
 
             /**
@@ -485,7 +485,7 @@ namespace DST
              * @return U 
              */
             template<typename U>
-            U moffatt2D ( const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_, const U& a_, const U& b_,const U& g_, U theta=0)
+            U moffat2D ( const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_, const U& a_, const U& b_,const U& g_, U theta=0)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::moffat_distribution] Unsuported datatype or data structure\033[0m");
