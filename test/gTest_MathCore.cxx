@@ -1098,7 +1098,7 @@ TYPED_TEST(IGauss2DAsymTest, NumericalNorm)
         {
             const T x = -T(7) + (T(i) + T(0.5)) * dxy;
             const T y = -T(7) + (T(j) + T(0.5)) * dxy;
-            sum += fn::integrated_gauss2D(x, y, A, mx, my, sx, sy, dxy, dxy, theta, 100);
+            sum += fn::integrated_gauss2D(x, y, A, mx, my, sx, sy, theta, dxy, dxy, 100);
         }
     EXPECT_NEAR(double(sum), double(A), FnTol<T>::integ);
 }
@@ -1120,7 +1120,7 @@ TYPED_TEST(IGauss2DAsymTest, Theta0MatchesAnalytical)
             const double expected = double(A) / 4.
                                     * (std::erf(x2 / sq2) - std::erf(x1 / sq2))
                                     * (std::erf(y2 / sq2) - std::erf(y1 / sq2));
-            EXPECT_NEAR(double(fn::integrated_gauss2D(x, y, A, mx, my, sx, sy, dx, dy, T(0), 100)),
+            EXPECT_NEAR(double(fn::integrated_gauss2D(x, y, A, mx, my, sx, sy, T(0), dx, dy, 100)),
                         expected, FnTol<T>::integ);
         }
 }

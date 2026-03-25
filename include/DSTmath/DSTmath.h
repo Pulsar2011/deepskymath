@@ -320,7 +320,7 @@ namespace DST
              * @return double value sampled from the normale distribution
              */
             template<typename U>
-            U gauss2D ( const U& _x, const U& _y, const U& A, const U& m_x, const U& m_y, const U& s_x, const U& s_y, U _theta=0)
+            U gauss2D ( const U& _x, const U& _y, const U& A, const U& m_x, const U& m_y, const U& s_x, const U& s_y, U _theta)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::normal_distribution] Unsuported datatype or data structure\033[0m");
@@ -363,7 +363,7 @@ namespace DST
              * @return Integral of the Gaussian over the bin \f$[x-dx/2,\,x+dx/2]\times[y-dy/2,\,y+dy/2]\f$
              */
             template<typename U>
-            U integrated_gauss2D ( const U& _x, const U& _y, const U& A, const U& m_x, const U& m_y, const U& s_x, const U& s_y, const U& dx_, const U& dy_, U _theta=0, size_t nBins_ = 10)
+            U integrated_gauss2D ( const U& _x, const U& _y, const U& A, const U& m_x, const U& m_y, const U& s_x, const U& s_y, const U& _theta, const U& dx_, const U& dy_, size_t nBins_ = 10)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::normal_distribution] Unsuported datatype or data structure\033[0m");
@@ -421,9 +421,9 @@ namespace DST
              * @see integrated_gauss2D()
              */
             template<typename U>
-            U igauss2D ( const U& _x, const U& _y, const U& A, const U& m_x, const U& m_y, const U& s_x, const U& s_y, const U& dx_, const U& dy_, U _theta=0, size_t nBins_ = 10)
+            U igauss2D ( const U& _x, const U& _y, const U& A, const U& m_x, const U& m_y, const U& s_x, const U& s_y, const U& _theta, const U& dx_, const U& dy_,  size_t nBins_ = 10)
             {
-                return integrated_gauss2D(_x, _y, A, m_x, m_y, s_x, s_y, dx_, dy_, _theta, nBins_);
+                return integrated_gauss2D(_x, _y, A, m_x, m_y, s_x, s_y, _theta, dx_, dy_, nBins_);
             }
 
             /**
@@ -485,15 +485,15 @@ namespace DST
              * @return U 
              */
             template<typename U>
-            U moffat2D ( const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_, const U& a_, const U& b_,const U& g_, U theta=0)
+            U moffat2D ( const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_, const U& a_, const U& b_,const U& g_, const U& theta_)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::moffat_distribution] Unsuported datatype or data structure\033[0m");
                 if(g_ == U(0))
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::moffat_distribution] gamma parameter must be non-zero\033[0m");
 
-                U x1 = (x_-x0_)*std::cos(theta) + (y_-y0_)*std::sin(theta);
-                U y1 =-(x_-x0_)*std::sin(theta) + (y_-y0_)*std::cos(theta);
+                U x1 = (x_-x0_)*std::cos(theta_) + (y_-y0_)*std::sin(theta_);
+                U y1 =-(x_-x0_)*std::sin(theta_) + (y_-y0_)*std::cos(theta_);
 
                 const U norm = (b_ - 1) / (MathCore::Pi() * a_ * a_ * g_);
                 return A_ * norm * std::pow( 1.0 + 1.0/(a_*a_) * (x1*x1 + y1*y1/(g_*g_)) , -b_);
@@ -585,7 +585,7 @@ namespace DST
              */
             template<typename U>
             U lorentzian2D(const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_,
-                           const U& g_, const U& q_, U theta = U(0))
+                           const U& g_, const U& q_, const U& theta)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::lorentzian2D] Unsupported datatype\033[0m");
@@ -723,7 +723,7 @@ namespace DST
              */
             template<typename U>
             U pseudo_voigt2D(const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_,
-                             const U& fG_, const U& fL_, const U& q_, U theta = U(0))
+                             const U& fG_, const U& fL_, const U& q_, const U& theta)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::pseudo_voigt2D] Unsupported datatype\033[0m");
@@ -839,7 +839,7 @@ namespace DST
              */
             template<typename U>
             U sersic2D(const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_,
-                       const U& re_, const U& n_, const U& q_, U theta = U(0))
+                       const U& re_, const U& n_, const U& q_, const U& theta)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::sersic2D] Unsupported datatype\033[0m");
@@ -943,7 +943,7 @@ namespace DST
              */
             template<typename U>
             U king2D(const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_,
-                     const U& rc_, const U& rt_, const U& q_, U theta = U(0))
+                     const U& rc_, const U& rt_, const U& q_, const U& theta)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::king2D] Unsupported datatype\033[0m");
@@ -1040,7 +1040,7 @@ namespace DST
              */
             template<typename U>
             U airy2D(const U& x_, const U& y_, const U& A_, const U& x0_, const U& y0_,
-                     const U& a_, const U& q_, U theta = U(0))
+                     const U& a_, const U& q_, const U& theta)
             {
                 if(!is_allowed_math_type<U>)
                     throw std::invalid_argument("\033[1;35;47m[DST::Math::function::airy2D] Unsupported datatype\033[0m");
