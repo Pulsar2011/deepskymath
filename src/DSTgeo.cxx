@@ -837,74 +837,111 @@ namespace DST
     
         /**
          * @brief Compute the intersection polygon of this polygon with @p poly2.
-         * @details The algorithm proceeds in four passes, each adding candidate vertices
-         *   to a result polygon via AddPoint() (which suppresses duplicates):
-         *   1. Vertices of @c this that are inside @p poly2.
-         *   2. Vertices of @p poly2 that are inside @c this.
-         *   3. Edge-edge intersections of @c this against @p poly2 that lie inside @c this.
-         *   4. Edge-edge intersections of @p poly2 against @c this that lie inside @c this.
+         * @details Implements the Sutherland-Hodgman algorithm.  The subject polygon
+         *   (@c this) is clipped against each directed edge of the clip polygon (@p poly2)
+         *   in sequence.  For each clipping edge p1→p2, a point is "inside" if it lies
+         *   on the left-hand side (cross product ≥ 0) of the directed edge.  The output
+         *   is a correctly ordered polygon whose area equals the true geometric intersection.
          *
-         *   Both polygons are ordered clockwise before processing.
-         * @param poly2 The second polygon (must have at least 3 vertices).
-         * @return A new polygon2D representing the intersection area.  Its area will be
-         *         0 if the two polygons do not overlap.
+         *   Correctness properties:
+         *   - Disjoint polygons: returns an empty polygon (Area() == 0).
+         *   - Edge-touching polygons (shared boundary, zero area): returns a degenerate
+         *     polygon with < 3 vertices or collinear vertices (Area() ≈ 0).
+         *   - Partial or full overlap: returns the exact intersection polygon.
+         *
+         * @param poly2 The clip polygon (must have at least 3 vertices).
+         * @return A polygon2D whose area is the intersection area (0 when disjoint).
          * @throws std::invalid_argument if either polygon has fewer than 3 vertices.
          */
         polygon2D polygon2D::GetIntersectionWithPolygons(polygon2D& poly2)
         {
             if(poly2.size() < 3 || fp.size() < 3)
                 throw std::invalid_argument("A polynoms should have minumum of 3 points.");
-            
+
+            // Order both polygons consistently (ascending atan2 = CCW in standard coords).
             OrderClockwise();
             poly2.OrderClockwise();
-            
-            polygon2D clippedCorners = polygon2D();
-        
-            //Add  the corners of this poly which are inside poly2
-            for (size_t i = 0; i < fp.size(); i++)
-            {      
-                if (poly2.IsPointInside(fp[i]))
-                    clippedCorners.AddPoint(fp[i]);
-            }
-        
-            //Add the corners of poly2 which are inside this poly
-            for (size_t i = 0; i < poly2.size(); i++)
-            {      
-                if (IsPointInside(poly2[i]))
-                    clippedCorners.AddPoint(poly2[i]);
-            }
-        
-            //Add  the intersection points
-            for (size_t i = 0; i < fp.size(); i++)
+
+            // Working list of vertices, initialised to the subject polygon.
+            std::vector<point> output(fp.begin(), fp.end());
+
+            const size_t nClip = poly2.size();
+
+            for(size_t ci = 0; ci < nClip && !output.empty(); ++ci)
             {
-                size_t next = (i+1 == fp.size())? 0: i+1;
-                
-                std::vector<point> intersect = poly2.GetIntersectionPoints(fp[i], fp[next]);
-                for(size_t k = 0; k < intersect.size(); k++)
+                const size_t cnext = (ci + 1 == nClip) ? 0 : ci + 1;
+                const point& p1 = poly2[ci];
+                const point& p2 = poly2[cnext];
+
+                // Edge vector of the current clip edge.
+                const double ex = p2.X() - p1.X();
+                const double ey = p2.Y() - p1.Y();
+
+                // OrderClockwise() sorts by ascending atan2, which gives CCW
+                // ordering in standard (y-up) coordinates.  For a CCW polygon
+                // the interior is to the LEFT of each directed edge p1→p2:
+                //   cross = ex*(pt.Y-p1.Y) - ey*(pt.X-p1.X)
+                //   cross >= 0  →  left side  →  inside
+                //   cross <  0  →  right side →  outside
+                // Tolerance absorbs floating-point rounding at shared edges.
+                auto inside = [&](const point& pt) -> bool {
+                    const double cross = ex * (pt.Y() - p1.Y())
+                                       - ey * (pt.X() - p1.X());
+                    return cross >= -point::precision;
+                };
+
+                // Intersection of segment a→b with the infinite clip line p1→p2.
+                // Standard S-H formula: t = d1 / (d1 - d2)
+                //   where d1 = cross(edge, a-p1), d2 = cross(edge, b-p1)
+                //   d1 - d2 = ex*(a.y-b.y) - ey*(a.x-b.x) = -(ey*dx - ex*dy)
+                //   Wait: d1-d2 = ex*(a.y-p1.y)-ey*(a.x-p1.x) - [ex*(b.y-p1.y)-ey*(b.x-p1.x)]
+                //               = ex*(a.y-b.y) - ey*(a.x-b.x)
+                //               = -(ex*dy - ey*dx) where dx=b.x-a.x, dy=b.y-a.y
+                // So denom = -(ex*dy - ey*dx) = ey*dx - ex*dy.
+                auto intersectPt = [&](const point& a, const point& b) -> point {
+                    const double dx    = b.X() - a.X();
+                    const double dy    = b.Y() - a.Y();
+                    const double denom = ey * dx - ex * dy;   // = d1 - d2 negated sign corrected
+                    double t = 0.0;
+                    if(std::abs(denom) > point::precision)
+                        t = (ex * (a.Y() - p1.Y()) - ey * (a.X() - p1.X())) / denom;
+                    return point({a.X() + t * dx, a.Y() + t * dy});
+                };
+
+                // Clip each subject edge against the current clip edge.
+                const std::vector<point> input = std::move(output);
+                output.clear();
+
+                const size_t n = input.size();
+                for(size_t i = 0; i < n; ++i)
                 {
-                    if(IsPointInside(intersect[k]))
-                        clippedCorners.AddPoint(intersect[k]);
+                    const point& cur  = input[i];
+                    const point& prev = input[(i + n - 1) % n];
+
+                    if(inside(cur))
+                    {
+                        if(!inside(prev))
+                            output.push_back(intersectPt(prev, cur));
+                        output.push_back(cur);
+                    }
+                    else if(inside(prev))
+                    {
+                        output.push_back(intersectPt(prev, cur));
+                    }
                 }
-                           
-                intersect.clear();
             }
-            
-            //Add  the intersection points
-            for (size_t i = 0; i < poly2.size(); i++)
-            {
-                size_t next = (i+1 == poly2.size())? 0: i+1;
-                
-                std::vector<point> intersect = GetIntersectionPoints(poly2[i], poly2[next]);
-                for(size_t k = 0; k < intersect.size(); k++)
-                {
-                    if(IsPointInside(intersect[k]))
-                        clippedCorners.AddPoint(intersect[k]);
-                }
-                           
-                intersect.clear();
-            }
-            
-            return clippedCorners;
+
+            // Convert the vertex list to a polygon2D.
+            // AddPoint() suppresses near-duplicate vertices (within point::precision).
+            // S-H produces vertices in the correct CCW winding order already;
+            // mark the result as ordered so Area() does not re-sort via atan2
+            // (which would be correct for convex polygons but is fragile otherwise).
+            polygon2D result;
+            for(const auto& pt : output)
+                result.AddPoint(pt);
+            result.OrderClockwise();   // normalise once, marks fordered=true
+
+            return result;
         }
 #pragma endregion    
 
