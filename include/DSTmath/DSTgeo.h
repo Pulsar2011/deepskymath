@@ -226,7 +226,7 @@ namespace DST
             virtual DST::Math::point EndPoint() const {return point({X(), Y(), Z()});}
             
 #pragma mark -- Opperator
-#ifdef Linuxx86_64
+#if defined(Linuxx86_64) || defined(Linuxaarch64)
             using vector2D::operator<=;
             using vector2D::operator<;
             using vector2D::operator>=;
