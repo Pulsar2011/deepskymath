@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <sstream>
 #include <algorithm>
 #include <DSTmath/DSTgeo.h>
 #include <DSTmath/DSTmath.h>
@@ -543,6 +544,470 @@ namespace DST
             return sdump;
         }
 #pragma endregion        
+#pragma endregion
+
+
+#pragma region - polygon2D class implementation
+
+#pragma region -- protected member
+        /**
+         * @brief Sort polygon vertices in clockwise angular order around the centroid.
+         * @details Computes the mean X and Y of all vertices as the centroid, then
+         *   sorts the vertex list with std::sort using atan2 as the key, yielding a
+         *   clockwise ordering. Sets #fordered to @c true. If already ordered the
+         *   function returns immediately without resorting.
+         */
+        void polygon2D::OrderClockwise()
+        {
+            if(fordered)
+                return;
+
+            double mX = 0;
+            double mY = 0;
+            std::vector<point>::const_iterator np= fp.cbegin();
+            while(np != fp.cend())
+            {
+                mX += np->X();
+                mY += np->Y();
+                np++;
+            }
+            mX /= static_cast<double>(fp.size());
+            mY /= static_cast<double>(fp.size());
+        
+            std::sort(fp.begin(),fp.end(),[mX,mY](point const& a, point const& b) -> bool {return std::atan2(a.Y()-mY,a.X()-mX) < std::atan2(b.Y()-mY,b.X()-mX); });
+
+            fordered |=true;
+        }
+    
+        /**
+         * @brief Find the intersection point of two 2D line segments.
+         * @details Uses the line equation Ax + By = C derived from each segment to solve
+         *   the 2×2 system. Three degenerate cases are handled explicitly:
+         *   - Segment 1 is vertical (B1 ≈ 0) and segment 2 is not,
+         *   - Segment 2 is vertical (B2 ≈ 0) and segment 1 is not,
+         *   - General case with a non-zero determinant.
+         *
+         *   After computing the candidate intersection the method verifies that the
+         *   point lies within the bounding box of both segments before accepting it.
+         * @param l1p1 First endpoint of segment 1.
+         * @param l1p2 Second endpoint of segment 1.
+         * @param l2p1 First endpoint of segment 2.
+         * @param l2p2 Second endpoint of segment 2.
+         * @return Heap-allocated intersection point (caller must delete), or @c NULL
+         *         when the segments are parallel, collinear, or do not overlap.
+         */
+        point* polygon2D::GetIntersectionPoint(const point& l1p1, const point& l1p2, const point& l2p1, const point& l2p2) const
+        {
+            double x=0;
+            double y=0;
+
+            double A1 = ((l1p2.X() > l1p1.X())?+1:-1)*( l1p2.Y() - l1p1.Y() );
+            double B1 = ((l1p2.X() > l1p1.X())?+1:-1)*( l1p1.X() - l1p2.X() );
+            double C1 = A1 * l1p1.X() + B1 * l1p1.Y();
+        
+            double A2 = ((l2p2.X() > l2p1.X())?+1:-1)*( l2p2.Y() - l2p1.Y() );
+            double B2 = ((l2p2.X() > l2p1.X())?+1:-1)*( l2p1.X() - l2p2.X() );
+            double C2 = A2 * l2p1.X() + B2 * l2p1.Y();
+
+            double det = A1 * B2 - A2 * B1;
+
+            if(std::abs(B1) <= point::precision && std::abs(B2) > point::precision)
+            {
+                double alpha = (l2p2.X() > l2p1.X())? (l2p2.Y() - l2p1.Y())/(l2p2.X() - l2p1.X()) : (l2p1.Y() - l2p2.Y())/(l2p1.X() - l2p2.X());
+                double beta  = l2p1.Y() - alpha * l2p1.X();
+                x = l1p1.X();
+                y = alpha * x + beta;
+            }
+            else if(std::abs(B1) > point::precision && std::abs(B2) <= point::precision)
+            {
+                double alpha = (l1p2.X() > l1p1.X())? (l1p2.Y() - l1p1.Y())/(l1p2.X() - l1p1.X()) : (l1p1.Y() - l1p2.Y())/(l1p1.X() - l1p2.X());
+                double beta  = l1p1.Y() - alpha * l1p1.X();
+                x = l2p1.X();
+                y = alpha * x + beta;
+            }
+            else if (std::abs(det) > point::precision)
+            {
+                //lines are parallel
+                x = (B2 * C1 - B1 * C2) / det;
+                y = (A1 * C2 - A2 * C1) / det;
+            }
+
+            bool onSeg1  = true;
+                 onSeg1 &= (std::min(l1p1.X(), l1p2.X()) < x || (std::abs(std::min(l1p1.X(), l1p2.X()) - x) <= point::precision));
+                 onSeg1 &= (std::max(l1p1.X(), l1p2.X()) > x || (std::abs(std::max(l1p1.X(), l1p2.X()) - x) <= point::precision));
+                 onSeg1 &= (std::min(l1p1.Y(), l1p2.Y()) < y || (std::abs(std::min(l1p1.Y(), l1p2.Y()) - y) <= point::precision));
+                 onSeg1 &= (std::max(l1p1.Y(), l1p2.Y()) > y || (std::abs(std::max(l1p1.Y(), l1p2.Y()) - y) <= point::precision));
+
+            bool onSeg2  = true;
+                 onSeg2 &= (std::min(l2p1.X(), l2p2.X()) < x || (std::abs(std::min(l2p1.X(), l2p2.X()) - x) <= point::precision));
+                 onSeg2 &= (std::max(l2p1.X(), l2p2.X()) > x || (std::abs(std::max(l2p1.X(), l2p2.X()) - x) <= point::precision));
+                 onSeg2 &= (std::min(l2p1.Y(), l2p2.Y()) < y || (std::abs(std::min(l2p1.Y(), l2p2.Y()) - y) <= point::precision));
+                 onSeg2 &= (std::max(l2p1.Y(), l2p2.Y()) > y || (std::abs(std::max(l2p1.Y(), l2p2.Y()) - y) <= point::precision));
+
+        
+            if (onSeg1 && onSeg2)
+                return new point({x, y});
+
+            return NULL; //intersection is at out of at least one segment.
+        }
+
+        /**
+         * @brief Collect all intersections between a segment and the polygon edges.
+         * @details Iterates over each edge of the polygon (vertex i → vertex i+1, with
+         *   wrap-around) and calls GetIntersectionPoint() for each edge against the
+         *   given segment. Returns an empty vector when the polygon has fewer than
+         *   3 vertices. Calls OrderClockwise() before iterating.
+         * @param l1p1 First endpoint of the query segment.
+         * @param l1p2 Second endpoint of the query segment.
+         * @return Vector of 2D intersection points (may be empty).
+         */
+        std::vector<point> polygon2D::GetIntersectionPoints(const point& l1p1, const point& l1p2)
+        {
+            OrderClockwise();
+
+            std::vector<point> intersectionPoints = std::vector<point>();
+            if(fp.size() < 3)
+                return intersectionPoints;
+
+            for (size_t i = 0; i < fp.size(); i++)
+            {
+                size_t next = ((i + 1) == fp.size()) ? 0 : i + 1;
+            
+                point* ip = GetIntersectionPoint(l1p1, l1p2, fp[i], fp[next]);
+            
+                if (ip != NULL)
+                {
+                    intersectionPoints.push_back(point({ip->X(),ip->Y()}));
+                    delete ip;
+                }
+            }
+
+            return intersectionPoints;
+        }
+#pragma endregion
+
+#pragma region -- ctor/dtor
+        /**
+         * @brief Copy constructor. Duplicates vertices and ordering state from @p cpy.
+         * @param cpy Source polygon to copy.
+         */
+        polygon2D::polygon2D(const polygon2D& cpy):fp(cpy.fp),fordered(cpy.fordered)
+        {}
+
+        polygon2D::~polygon2D()
+        {
+            fp.clear();
+        }
+#pragma endregion
+
+#pragma region -- Modifier
+        /**
+         * @brief Add a vertex to the polygon.
+         * @details Only the X and Y coordinates of @p p are stored (the Z component and
+         *   any higher dimensions are discarded). If a point with the same (X, Y) values
+         *   already exists in the polygon the call is a no-op. Adding a new point resets
+         *   #fordered to @c false so that OrderClockwise() will be called again.
+         * @param p The point to add; only p.X() and p.Y() are used.
+         */
+        void polygon2D::AddPoint(const point& p)
+        {
+            if(fp.size() < 1)
+            {
+                fp.push_back(point({p.X(),p.Y()}));
+                fordered &= false;
+                return;
+            }
+
+            bool found = false;
+            std::vector<point>::const_iterator np= fp.cbegin();
+
+            while(!found && (np != fp.cend()))
+            {
+                if (p == (*np))
+                    found = true;
+
+                np++;
+            }
+
+            if (found)
+                return;
+
+            fp.push_back(point({p.X(),p.Y()}));
+            fordered &= false;
+        }
+#pragma endregion
+    
+#pragma region -- Accessor
+        /**
+         * @brief Compute the area of the polygon using the shoelace formula.
+         * @details Calls OrderClockwise() to ensure vertices are in clockwise order,
+         *   then applies the formula:
+         *   \f$ A = \frac{1}{2}\left|\sum_{i=0}^{n-1}(x_{j}+x_{i})(y_{j}-y_{i})\right| \f$
+         *   where \f$j\f$ is the previous vertex index.
+         * @return Polygon area (always non-negative), or 0 if fewer than 3 vertices.
+         */
+        double polygon2D::Area()
+        {
+            if(fp.size() < 3)
+                return 0;
+
+            OrderClockwise();
+
+            // Initialze area
+            double area = 0.0;
+        
+            // Calculate value of shoelace formula
+            size_t n = fp.size();
+            size_t j = n - 1;
+            for (size_t i = 0; i < n; i++)
+            {
+                area += (fp[j].X() + fp[i].X()) * (fp[j].Y() - fp[i].Y());
+                j = i;  // j is previous vertex to i
+            }
+        
+            // Return absolute value
+            return std::abs(area/2.);
+        }
+    
+        /**
+         * @brief Test whether a point lies inside or on the boundary of the polygon.
+         * @details Uses ray-casting (counting edge crossings along the positive X ray)
+         *   augmented with two special cases:
+         *   - **Corner hit**: if @p pts coincides with a vertex (within half-precision)
+         *     the function returns @c true immediately.
+         *   - **Edge hit**: if the cross-product of the two edge-relative vectors is
+         *     zero and the Y coordinate falls within the edge's Y range, the function
+         *     returns @c true.
+         *   Calls OrderClockwise() before iterating.
+         * @param pts The point to test (only X and Y are used).
+         * @return @c true if @p pts is inside the polygon or on its boundary,
+         *         @c false if outside or if the polygon has fewer than 3 vertices.
+         */
+        bool polygon2D::IsPointInside(const point& pts)
+        {
+            if(fp.size() < 3)
+                return false;
+
+            OrderClockwise();
+
+            bool isInside = false;
+            for ( size_t i = 0; i < fp.size(); i++)
+            {
+                size_t j = (i+1 == fp.size() )?0 : i+1;
+
+                //check if point is in a corner
+                if((std::abs(pts.X() - fp[i].X()) <= point::precision/2.) && (std::abs(pts.Y() - fp[i].Y()) <= point::precision/2.))
+                {
+                    isInside |= true;
+                    break;
+                }
+
+                //check if point is on edge
+                point pp1 = point({pts.X() - fp[i].X(), pts.Y() - fp[i].Y()});
+                point pp2 = point({pts.X() - fp[j].X(), pts.Y() - fp[j].Y()});
+                
+                if( std::abs(pp1.X()*pp2.Y() - pp1.Y()*pp2.X()) < point::precision )
+                {
+
+                    double y_min = std::min(fp[i].Y(),fp[j].Y());
+                    double y_max = std::max(fp[i].Y(),fp[j].Y());
+                    double x_min = std::min(fp[i].X(),fp[j].X());
+                    double x_max = std::max(fp[i].X(),fp[j].X());
+
+                    if(pts.Y() <= (y_max+point::precision) && pts.Y() >= (y_min-point::precision) &&
+                       pts.X() <= (x_max+point::precision) && pts.X() >= (x_min-point::precision))
+                        isInside |= true;
+
+                    if(isInside)
+                        break;
+                } 
+        
+
+                //check if point is inside
+                if ((((fp[i].Y() < pts.Y()) && (pts.Y() < fp[j].Y())) ||
+                    ((fp[j].Y() < pts.Y()) && (pts.Y() < fp[i].Y()))) &&
+                    (pts.X() < (fp[j].X() - fp[i].X()) * (pts.Y() - fp[i].Y()) / (fp[j].Y() - fp[i].Y()) + fp[i].X()))
+                {
+                    isInside = !isInside;
+                }
+            }
+
+            return isInside;
+        }
+    
+        /**
+         * @brief Compute the intersection polygon of this polygon with @p poly2.
+         * @details Implements the Sutherland-Hodgman algorithm.  The subject polygon
+         *   (@c this) is clipped against each directed edge of the clip polygon (@p poly2)
+         *   in sequence.  For each clipping edge p1→p2, a point is "inside" if it lies
+         *   on the left-hand side (cross product ≥ 0) of the directed edge.  The output
+         *   is a correctly ordered polygon whose area equals the true geometric intersection.
+         *
+         *   Correctness properties:
+         *   - Disjoint polygons: returns an empty polygon (Area() == 0).
+         *   - Edge-touching polygons (shared boundary, zero area): returns a degenerate
+         *     polygon with < 3 vertices or collinear vertices (Area() ≈ 0).
+         *   - Partial or full overlap: returns the exact intersection polygon.
+         *
+         * @param poly2 The clip polygon (must have at least 3 vertices).
+         * @return A polygon2D whose area is the intersection area (0 when disjoint).
+         * @throws std::invalid_argument if either polygon has fewer than 3 vertices.
+         */
+        polygon2D polygon2D::GetIntersectionWithPolygons(polygon2D& poly2)
+        {
+            if(poly2.size() < 3 || fp.size() < 3)
+                throw std::invalid_argument("A polynoms should have minumum of 3 points.");
+
+            // Order both polygons consistently (ascending atan2 = CCW in standard coords).
+            OrderClockwise();
+            poly2.OrderClockwise();
+
+            // Working list of vertices, initialised to the subject polygon.
+            std::vector<point> output(fp.begin(), fp.end());
+
+            const size_t nClip = poly2.size();
+
+            for(size_t ci = 0; ci < nClip && !output.empty(); ++ci)
+            {
+                const size_t cnext = (ci + 1 == nClip) ? 0 : ci + 1;
+                const point& p1 = poly2[ci];
+                const point& p2 = poly2[cnext];
+
+                // Edge vector of the current clip edge.
+                const double ex = p2.X() - p1.X();
+                const double ey = p2.Y() - p1.Y();
+
+                // OrderClockwise() sorts by ascending atan2, which gives CCW
+                // ordering in standard (y-up) coordinates.  For a CCW polygon
+                // the interior is to the LEFT of each directed edge p1→p2:
+                //   cross = ex*(pt.Y-p1.Y) - ey*(pt.X-p1.X)
+                //   cross >= 0  →  left side  →  inside
+                //   cross <  0  →  right side →  outside
+                // Tolerance absorbs floating-point rounding at shared edges.
+                auto inside = [&](const point& pt) -> bool {
+                    const double cross = ex * (pt.Y() - p1.Y())
+                                       - ey * (pt.X() - p1.X());
+                    return cross >= -point::precision;
+                };
+
+                // Intersection of segment a→b with the infinite clip line p1→p2.
+                // Standard S-H formula: t = d1 / (d1 - d2)
+                //   where d1 = cross(edge, a-p1), d2 = cross(edge, b-p1)
+                //   d1 - d2 = ex*(a.y-b.y) - ey*(a.x-b.x) = -(ey*dx - ex*dy)
+                //   Wait: d1-d2 = ex*(a.y-p1.y)-ey*(a.x-p1.x) - [ex*(b.y-p1.y)-ey*(b.x-p1.x)]
+                //               = ex*(a.y-b.y) - ey*(a.x-b.x)
+                //               = -(ex*dy - ey*dx) where dx=b.x-a.x, dy=b.y-a.y
+                // So denom = -(ex*dy - ey*dx) = ey*dx - ex*dy.
+                auto intersectPt = [&](const point& a, const point& b) -> point {
+                    const double dx    = b.X() - a.X();
+                    const double dy    = b.Y() - a.Y();
+                    const double denom = ey * dx - ex * dy;   // = d1 - d2 negated sign corrected
+                    double t = 0.0;
+                    if(std::abs(denom) > point::precision)
+                        t = (ex * (a.Y() - p1.Y()) - ey * (a.X() - p1.X())) / denom;
+                    return point({a.X() + t * dx, a.Y() + t * dy});
+                };
+
+                // Clip each subject edge against the current clip edge.
+                const std::vector<point> input = std::move(output);
+                output.clear();
+
+                const size_t n = input.size();
+                for(size_t i = 0; i < n; ++i)
+                {
+                    const point& cur  = input[i];
+                    const point& prev = input[(i + n - 1) % n];
+
+                    if(inside(cur))
+                    {
+                        if(!inside(prev))
+                            output.push_back(intersectPt(prev, cur));
+                        output.push_back(cur);
+                    }
+                    else if(inside(prev))
+                    {
+                        output.push_back(intersectPt(prev, cur));
+                    }
+                }
+            }
+
+            // Convert the vertex list to a polygon2D.
+            // AddPoint() suppresses near-duplicate vertices (within point::precision).
+            // S-H produces vertices in the correct CCW winding order already;
+            // mark the result as ordered so Area() does not re-sort via atan2
+            // (which would be correct for convex polygons but is fragile otherwise).
+            polygon2D result;
+            for(const auto& pt : output)
+                result.AddPoint(pt);
+            result.OrderClockwise();   // normalise once, marks fordered=true
+
+            return result;
+        }
+#pragma endregion    
+
+#pragma region -- Dumping
+
+        /**
+         * @brief Return a human-readable ANSI-coloured description of the polygon.
+         * @details Lists the label, the ordering state, the area (when ordered), and
+         *   each vertex coordinate followed by the first vertex again to close the
+         *   display loop.
+         * @param name Label printed in the header (default: @c "polygon2D").
+         * @return Multi-line string. Returns a short "is empty" message when #fp is empty.
+         */
+        std::string polygon2D::Dump(std::string name)
+        {
+
+            if(fp.size()<1)
+                return std::string("\033[31m ")+name+std::string("\033[1;31m is empty. \033[0m");
+        
+            std::ostringstream sdump;
+            sdump << std::string("\033[31m ")<<name<<std::string("\033[0m\n");
+            sdump << std::string("\033[31m      |- ordered :\033[0m")<<((fordered)?std::string("true"):std::string("false"))<<std::string("\n");
+            
+            if(fordered)
+                sdump << std::string("\033[31m      |- area :\033[0m")<<std::setprecision(14)<<Area()<<std::string("\n");
+            
+            std::vector<point>::const_iterator np= fp.cbegin();
+        
+            while (np != fp.cend())
+            {
+                sdump << std::string("\033[31m      |- \033[0m")<<np->Dump()<<std::string("\n");
+                np++;
+            }
+
+            sdump <<std::string("\033[31m      |- \033[0m")<<fp.cbegin()->Dump()<<std::string("\n");
+            sdump <<std::string("\033[31m      `- \033[32mDONE\033[0m\n");
+
+            return sdump.str();
+        }
+
+        /**
+         * @brief Return a compact semicolon-separated list of vertex coordinates.
+         * @details Each vertex is formatted as @c "(x;y);" and the first vertex is
+         *   appended at the end to close the polygon path, followed by a newline.
+         * @return Coordinate string, or an "is empty" ANSI-coloured message.
+         */
+        std::string polygon2D::DumpCorner() const
+        {
+                                                                                     
+            if(fp.size()<1)
+              return std::string("\033[1;31m is empty.\033[0m");
+
+            std::ostringstream sdump;
+            std::vector<point>::const_iterator np= fp.cbegin();
+            
+            while (np != fp.cend())
+            {
+                sdump <<"("<<np->X()<<";"<<np->Y()<<");";
+                np++;
+            }
+            
+            sdump <<"("<<fp.cbegin()->X()<<";"<<fp.cbegin()->Y()<<")"<<std::endl;
+
+            return sdump.str();
+        }
+#pragma endregion
 #pragma endregion
 
 #pragma region - vector2D class implementation

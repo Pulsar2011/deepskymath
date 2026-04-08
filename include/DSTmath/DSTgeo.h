@@ -122,6 +122,170 @@ namespace DST
                 return point(il);
             }
         };
+
+#pragma region - polygon2D class defnition
+
+        /*!
+         * @class polygon2D DSTgeo.h "DSTmath/DSTgeo.h"
+         * @brief 2D polygon defined by a set of vertices in the XY plane.
+         * @details polygon2D stores a collection of 2D points (using only the X and Y
+         *   coordinates of DST::Math::point) representing the vertices of a polygon.
+         *   Vertices are automatically sorted in clockwise order around their centroid
+         *   before any geometric computation is performed.
+         *
+         *   Supported operations include:
+         *   - area computation via the shoelace formula,
+         *   - point-in-polygon test (handles interior, edge, and corner cases),
+         *   - polygon–polygon intersection using a Sutherland–Hodgman–like approach.
+         *
+         * @note Duplicate vertices are silently ignored by AddPoint().
+         * @note A polygon needs at least 3 vertices for area or inside tests to be meaningful.
+         * @author William GILLARD
+         */
+        class polygon2D
+        {
+
+#pragma region -- protected memeber
+            protected:
+                std::vector<point> fp;   ///< Ordered list of 2D vertices.
+                bool fordered;           ///< True once the vertices have been sorted clockwise.
+
+                /*!
+                 * @brief Sort vertices clockwise around the centroid.
+                 * @details Computes the centroid of all vertices and then sorts them
+                 *   using atan2 so that they appear in clockwise angular order.
+                 *   Sets #fordered to @c true after sorting. Does nothing if
+                 *   #fordered is already @c true.
+                 */
+                void OrderClockwise();
+
+                /*!
+                 * @brief Compute the intersection point of two line segments.
+                 * @details Returns a heap-allocated DST::Math::point if the two
+                 *   segments [l1p1, l1p2] and [l2p1, l2p2] intersect strictly within
+                 *   both segments (endpoints included). Returns @c NULL when the
+                 *   segments are parallel or the intersection lies outside at least
+                 *   one segment.
+                 * @param l1p1 First endpoint of segment 1.
+                 * @param l1p2 Second endpoint of segment 1.
+                 * @param l2p1 First endpoint of segment 2.
+                 * @param l2p2 Second endpoint of segment 2.
+                 * @return Pointer to the intersection point (caller takes ownership),
+                 *         or @c NULL if there is no intersection on both segments.
+                 */
+                virtual point* GetIntersectionPoint(const point&, const point&, const point& , const point&) const;
+
+                /*!
+                 * @brief Collect all intersections of a segment with the polygon edges.
+                 * @details Iterates over all edges of this polygon and calls
+                 *   GetIntersectionPoint() for each edge against the given segment.
+                 *   Calls OrderClockwise() if not already ordered.
+                 * @param l1p1 First endpoint of the query segment.
+                 * @param l1p2 Second endpoint of the query segment.
+                 * @return Vector of intersection points (may be empty).
+                 */
+                virtual std::vector<point> GetIntersectionPoints(const point&, const point&);
+#pragma endregion
+
+            public:
+#pragma region -- ctor/dtor
+
+                /*!
+                 * @brief Default constructor. Creates an empty polygon.
+                 */
+                polygon2D():fp(std::vector<point>()),fordered(false){}
+
+                /*!
+                 * @brief Copy constructor.
+                 * @param cpy Polygon to copy. Vertices and ordering state are duplicated.
+                 */
+                polygon2D(const polygon2D&);
+
+                virtual ~polygon2D();
+#pragma endregion
+
+#pragma region -- Modifier
+                /*!
+                 * @brief Add a vertex to the polygon.
+                 * @details Only the X and Y coordinates of @p p are stored. If an
+                 *   identical 2D point is already present the call is a no-op.
+                 *   Adding a new point resets the ordering flag so that
+                 *   OrderClockwise() will be called again before the next computation.
+                 * @param p Point whose (X, Y) coordinates are added.
+                 */
+                void AddPoint(const point&);
+#pragma endregion
+
+#pragma region -- Accessor
+                /*!
+                 * @brief Return the number of vertices.
+                 * @return Number of vertices currently stored.
+                 */
+                inline const size_t size() const {return fp.size();}
+
+                /*!
+                 * @brief Access a vertex by index (no bounds checking).
+                 * @param i Zero-based vertex index.
+                 * @return Const reference to the i-th vertex.
+                 */
+                inline const point& operator[](const size_t& i) const {return fp[i];}
+
+                /*!
+                 * @brief Compute the area of the polygon.
+                 * @details Uses the shoelace formula on clockwise-ordered vertices.
+                 *   Calls OrderClockwise() if not already done.
+                 * @return Area in the same units as the vertex coordinates,
+                 *         or 0 if the polygon has fewer than 3 vertices.
+                 */
+                double Area();
+
+                /*!
+                 * @brief Test whether a 2D point lies inside (or on the boundary of) the polygon.
+                 * @details Uses a ray-casting algorithm augmented with explicit corner and edge
+                 *   checks so that points exactly on the boundary return @c true.
+                 *   Calls OrderClockwise() if not already done.
+                 * @param p Point to test (only X and Y are used).
+                 * @return @c true if @p p is inside or on the boundary,
+                 *         @c false if @p p is outside or the polygon has fewer than 3 vertices.
+                 */
+                bool IsPointInside(const point&);
+
+                /*!
+                 * @brief Compute the intersection polygon of this polygon with another.
+                 * @details Implements a Sutherland–Hodgman–like clipping: vertices of each
+                 *   polygon that lie inside the other are collected, then all edge–edge
+                 *   intersection points are added. Duplicate points are suppressed via
+                 *   AddPoint(). The result is an unordered polygon; call Area() to
+                 *   trigger clockwise ordering.
+                 * @param poly2 The second polygon (must have at least 3 vertices).
+                 * @return A new polygon2D representing the intersection region.
+                 *         Its area will be 0 if the polygons do not overlap.
+                 * @throws std::invalid_argument if either polygon has fewer than 3 vertices.
+                 */
+                polygon2D GetIntersectionWithPolygons(polygon2D&);
+#pragma endregion
+
+#pragma region -- Debug
+                /*!
+                 * @brief Return a human-readable (ANSI-coloured) description of the polygon.
+                 * @param name Label to print in the header line (default: @c "polygon2D").
+                 * @return Formatted string listing the ordering state, area (if ordered),
+                 *         and all vertex coordinates. Returns a short "is empty" message
+                 *         when the polygon has no vertices.
+                 */
+                virtual std::string Dump(std::string name="polygon2D");
+
+                /*!
+                 * @brief Return a compact semicolon-separated list of vertex coordinates.
+                 * @details Each vertex is formatted as @c "(x;y);" and the first vertex
+                 *   is repeated at the end to close the polygon path.
+                 * @return Coordinate string, or an "is empty" message when no vertices exist.
+                 */
+                virtual std::string DumpCorner() const;
+#pragma endregion
+
+        };
+#pragma endregion
         
 #pragma mark - vector2D class definition
 
