@@ -95,3 +95,4 @@ googletest/generated
 
 #--------------- MISC
 .gitlab-ci-local
+cmake_test*
