@@ -16,6 +16,11 @@
 #include <algorithm>
 #include <stdexcept>
 #include <string>
+#include <vector>
+#include <cstdint>
+#include <type_traits>
+#include <limits>
+#include <cmath>
 
 namespace DST
 {
@@ -766,6 +771,910 @@ namespace DST
 #pragma endregion
 #pragma endregion
 #pragma endregion
+
+#pragma region - Bit-masked array class definition
+        /**
+         *  @class DST::Math::BitMaskedArray DSTarray.h "DSTmath/DSTarray.h"
+         *  @brief Definition of a bit-masked array.
+         *  @details BitMaskedArray class describe a masked array whose mask is a data-quality bit-flag plane.
+         *           It is a wrapper around std::valarray where the mask is an unsigned integer type
+         *           (uint8_t, uint16_t, uint32_t or uint64_t) and each bit encodes a distinct quality condition.
+         *           Every statistic accepts an optional bad_bits selection: an element is considered masked
+         *           if and only if (mask & bad_bits) != 0. By default bad_bits has all bits set, i.e. any
+         *           raised flag masks the element, reproducing the behaviour of MaskedArray.
+         */
+        template <class T, class M>
+        class BitMaskedArray
+        {
+            static_assert(std::is_unsigned<M>::value && !std::is_same<M, bool>::value,
+                          "BitMaskedArray: M must be an unsigned integer type (uint8_t/uint16_t/uint32_t/uint64_t)");
+#pragma region -- private members
+        protected:
+            std::valarray<T> fData;
+            std::valarray<M> fMask;
+
+            /// All-bits-set default for bad_bits (promotion-safe for uint8_t/uint16_t).
+            static constexpr M kAllBits = static_cast<M>(~static_cast<M>(0));
+
+            /**
+             * @brief Selection of masked elements.
+             * @param bad_bits Bits of the mask considered as bad.
+             * @return boolean valarray, true where (mask & bad_bits) != 0
+             */
+            std::valarray<bool> bad(M bad_bits) const
+            {
+                std::valarray<M> _sel = fMask & bad_bits;
+                return _sel != M(0);
+            }
+
+            /**
+             * @brief Selection of unmasked elements.
+             * @param bad_bits Bits of the mask considered as bad.
+             * @return boolean valarray, true where (mask & bad_bits) == 0
+             */
+            std::valarray<bool> good(M bad_bits) const
+            {
+                std::valarray<M> _sel = fMask & bad_bits;
+                return _sel == M(0);
+            }
+
+#pragma endregion
+#pragma region -- public members functions
+        public:
+#pragma region ctor/dtor
+            /**
+             *  @brief Default constructor.
+             *  @details Create an empty bit-masked array.
+             */
+            BitMaskedArray():fData(),fMask() {};
+
+            /**
+             *  @brief Constructor with size.
+             *  @details Create a bit-masked array with a given size.
+             *  @param size Size of the bit-masked array.
+             */
+            BitMaskedArray(size_t size):fData(size),fMask(size)
+            {
+                fData *= 0;
+                fMask &= M(0);
+            };
+
+            /**
+             *  @brief Constructor with size and value.
+             *  @details Create a bit-masked array with a given size and a default value.
+             *  @param size Size of the bit-masked array.
+             *  @param value Default value of the bit-masked array.
+             */
+            BitMaskedArray(size_t size, T value):BitMaskedArray(size)
+            {
+                fData += value;
+                fMask &= M(0);
+            };
+
+            /**
+             *  @brief Constructor with array and mask.
+             *  @details Create a bit-masked array with a given size and a default value.
+             *  @param value Default value of the bit-masked array.
+             *  @param mask Mask of the bit-masked array.
+             */
+            BitMaskedArray(std::valarray<T> value, std::valarray<M> mask):fData(value),fMask(mask)
+            {
+                if (value.size() != mask.size())
+                    throw std::invalid_argument("BitMaskedArray::BitMaskedArray: value and mask size mismatch ["+std::to_string(__LINE__)+"]");
+            };
+
+            /**
+             *  @brief Constructor with array.
+             *  @details Create a bit-masked array with a given size and a default value.
+             *  @param value Default value of the bit-masked array.
+             */
+            BitMaskedArray(std::valarray<T> value):fData(value),fMask(value.size())
+            {
+                fMask &= M(0);
+            };
+
+            /**
+             *  @brief Constructor with array and mask.
+             *  @details Create a bit-masked array with a given size and a default value.
+             *  @param value Default value of the bit-masked array.
+             *  @param mask Mask of the bit-masked array.
+             */
+            BitMaskedArray(std::vector<T> value, std::vector<M> mask):fData(value.size()),fMask(mask.size())
+            {
+                if (value.size() != mask.size())
+                    throw std::invalid_argument("BitMaskedArray::BitMaskedArray: value and mask size mismatch ["+std::to_string(__LINE__)+"]");
+
+                std::copy(value.begin(), value.end(), std::begin(fData));
+                std::copy(mask.begin(), mask.end(), std::begin(fMask));
+            };
+
+            /**
+             *  @brief Constructor with array.
+             *  @details Create a bit-masked array with a given size and a default value.
+             *  @param value Default value of the bit-masked array.
+             */
+            BitMaskedArray(std::vector<T> value):fData(value.size()),fMask(value.size())
+            {
+                std::copy(value.begin(), value.end(), std::begin(fData));
+                fMask &= M(0);
+            };
+
+            /**
+             *  @brief Copy constructor.
+             *  @details Create a bit-masked array as a copy of another one.
+             *  @param ma Bit-masked array to be copied.
+             */
+            BitMaskedArray(const BitMaskedArray<T,M>& ma):fData(ma.fData),fMask(ma.fMask)
+            {
+
+            }
+
+            /**
+             *  @brief Destructor.
+             *  @details Destroy the bit-masked array.
+             */
+            ~BitMaskedArray()
+            {
+                fData.resize(0);
+                fMask.resize(0);
+            };
+
+            /**
+             * @brief Assignement operator
+             *
+             */
+            BitMaskedArray<T,M>& operator=(const BitMaskedArray<T,M>& ma)
+            {
+                fData.resize(ma.fData.size());
+                fMask.resize(ma.fMask.size());
+
+                fData = ma.fData;
+                fMask = ma.fMask;
+                return *this;
+            }
+
+            /**
+             * @brief Assignement operator
+             *
+             */
+            BitMaskedArray<T,M>& operator=(const std::slice_array<T>& ma)
+            {
+                std::valarray<T> _data=ma;
+                fData.resize(_data.size());
+                fMask.resize(fData.size());
+
+                fData *= 0;
+                fData += _data;
+                fMask &= M(0);
+
+                return *this;
+            }
+
+            /**
+             * @brief Assignement operator
+             *
+             */
+            BitMaskedArray<T,M>& operator=(const std::gslice_array<T>& ma)
+            {
+                std::valarray<T> _data=ma;
+                fData.resize(_data.size());
+                fMask.resize(fData.size());
+
+                fData *= 0;
+                fData += _data;
+                fMask &= M(0);
+                return *this;
+            }
+
+            /**
+             * @brief Assignement operator
+             *
+             */
+            BitMaskedArray<T,M>& operator=(const std::mask_array<T>& ma)
+            {
+                std::valarray<T> _data=ma;
+                fData.resize(_data.size());
+                fMask.resize(fData.size());
+
+                fData *= 0;
+                fData += _data;
+                fMask &= M(0);
+                return *this;
+            }
+
+            /**
+             * @brief Assignement operator
+             *
+             */
+            BitMaskedArray<T,M>& operator=(const std::indirect_array<T>& ma)
+            {
+                std::valarray<T> _data=ma;
+                fData.resize(_data.size());
+                fMask.resize(fData.size());
+
+                fData *= 0;
+                fData += _data;
+                fMask &= M(0);
+                return *this;
+            }
+
+            /**
+             * @brief Assignement operator
+             *
+             */
+            BitMaskedArray<T,M>& operator=(std::initializer_list<T> il)
+            {
+                std::valarray<T> _data=il;
+                fData.resize(_data.size());
+                fMask.resize(fData.size());
+
+                fData *= 0;
+                fData += _data;
+                fMask &= M(0);
+                return *this;
+            }
+
+#pragma endregion
+#pragma region accessors
+            /**
+             *  @brief Accessor to the data.
+             *  @details Return reference to the data array.
+             *  @return  reference to the fData array.
+             */
+            std::valarray<T>& data() { return fData; }
+            const std::valarray<T>& data() const { return fData; }
+
+            /**
+             *  @brief Accessor to the mask.
+             *  @details Return reference to the bit-flag mask array.
+             *  @return  reference to the fMask array.
+             */
+            std::valarray<M>& mask() { return fMask; }
+            const std::valarray<M>& mask() const { return fMask; }
+
+            /**
+             *  @brief Accessor to the size.
+             *  @details Return the size of the bit-masked array.
+             *  @return The size of the bit-masked array.
+             */
+            size_t size() const {return fData.size();}
+
+            /**
+             * @brief Count number of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return Number of values for which (mask & bad_bits) == 0
+             */
+            size_t count(M bad_bits = kAllBits) const
+            {
+                return fMask[good(bad_bits)].size();
+            }
+
+            /**
+             * @brief Access data at index index
+             * @param idx Index of the data to be accessed
+             * @return constante reference at position idx
+             */
+            const T& operator[](size_t idx) const
+            {
+                if( idx >= fData.size() )
+                    throw std::out_of_range("BitMaskedArray::operator[]: index out of range ["+std::to_string(__LINE__)+"]");
+
+                return fData[idx];
+            }
+
+            /**
+             * @brief Access data at index index
+             * @param idx Index of the data to be accessed
+             * @return  reference at position idx
+             */
+            T& operator[](size_t idx)
+            {
+                if( idx >= fData.size() )
+                    throw std::out_of_range("BitMaskedArray::operator[]: index out of range ["+std::to_string(__LINE__)+"]");
+
+                return fData[idx];
+            }
+
+            /**
+             * @brief Access the whole flag word at index idx
+             * @details Mirror of operator[] on the mask side, with the same range check.
+             * @param idx Index of the flag word to be accessed
+             * @return constante reference to the flag word at position idx
+             */
+            const M& flag(size_t idx) const
+            {
+                if( idx >= fMask.size() )
+                    throw std::out_of_range("BitMaskedArray::flag: index out of range ["+std::to_string(__LINE__)+"]");
+
+                return fMask[idx];
+            }
+
+            /**
+             * @brief Access the whole flag word at index idx
+             * @details Mirror of operator[] on the mask side, with the same range check.
+             * @param idx Index of the flag word to be accessed
+             * @return reference to the flag word at position idx
+             */
+            M& flag(size_t idx)
+            {
+                if( idx >= fMask.size() )
+                    throw std::out_of_range("BitMaskedArray::flag: index out of range ["+std::to_string(__LINE__)+"]");
+
+                return fMask[idx];
+            }
+
+            /**
+             * @brief Test whether the element at index idx is masked
+             * @param idx Index of the element to be tested
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return true if (mask[idx] & bad_bits) != 0
+             */
+            bool is_masked(size_t idx, M bad_bits = kAllBits) const
+            {
+                if( idx >= fMask.size() )
+                    throw std::out_of_range("BitMaskedArray::is_masked: index out of range ["+std::to_string(__LINE__)+"]");
+
+                return (fMask[idx] & bad_bits) != M(0);
+            }
+
+#pragma endregion
+#pragma region modifiers
+
+            /**
+             * @brief Reset the data object preserving the original size of the array
+             * @param data value to be set to the data array
+             */
+            void set_data(const std::valarray<T>& data)
+            {
+                fData.resize(data.size());
+                fMask.resize(fData.size());
+
+                fData *= 0;
+                fData += data;
+            }
+
+            /**
+             * @brief Change an element of the data array
+             * @param data value to be set to the data array
+             */
+            void set_data(const std::valarray<T>& data, const std::valarray<M>& mask)
+            {
+                if( mask.size() != data.size() )
+                    throw std::out_of_range("BitMaskedArray::set_data: unconsistant data size ["+std::to_string(__LINE__)+"]");
+
+                fData.resize(data.size());
+                fMask.resize(fData.size());
+
+                fData *= 0;
+                fData += data;
+
+                fMask &= M(0);
+                fMask |= mask;
+            }
+
+            /**
+             * @brief Reset the data mask preserving the original size of the array
+             * @param mask to be set to the data array
+             */
+            void set_mask(const std::valarray<M>& mask)
+            {
+                if (mask.size() != fMask.size())
+                    throw std::invalid_argument("BitMaskedArray::set_mask: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fMask &= M(0);
+                fMask |= mask;
+            }
+
+            /**
+             * @brief Reset the data mask preserving the original size of the array
+             * @param mask to be set to the data array
+             */
+            void set_mask(const size_t& idx, const M& mask)
+            {
+                if (idx >= fMask.size())
+                    throw std::invalid_argument("BitMaskedArray::set_mask: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fMask[idx] = mask;
+            }
+
+            /**
+             * @brief swap content of two BitMaskedArray
+             * @param ma BitMaskedArray to be swapped whith this
+             */
+            void swap(BitMaskedArray<T,M>& ma)
+            {
+                std::swap(fData,ma.fData);
+                std::swap(fMask,ma.fMask);
+            }
+
+            /**
+             * @brief resize the data and mask array
+             * @param size new size of the data and mask array
+             */
+            void resize(size_t size)
+            {
+                fData.resize(size);
+                fMask.resize(size);
+            }
+
+            /**
+             * @brief evaluate the sum of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the arithmetic sum of unmasked data
+             */
+            T sum(M bad_bits = kAllBits) const
+            {
+                std::valarray<T> _v = fData[good(bad_bits)];
+                return _v.sum();
+            }
+
+            /**
+             * @brief evaluate the minimum of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the minimum of unmasked data
+             */
+            T min(M bad_bits = kAllBits) const
+            {
+                std::valarray<T> _v = fData[good(bad_bits)];
+                return _v.min();
+            }
+
+            /**
+             * @brief evaluate the maximum of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the maximum of unmasked data
+             */
+            T max(M bad_bits = kAllBits) const
+            {
+                std::valarray<T> _v = fData[good(bad_bits)];
+                return _v.max();
+            }
+
+            /**
+             * @brief evaluate the mean of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the arithmetic mean of unmasked data
+             */
+            double mean(M bad_bits = kAllBits) const
+            {
+                std::valarray<T> _v = fData[good(bad_bits)];
+                return static_cast<double>(_v.sum())/static_cast<double>(_v.size());
+            }
+
+            /**
+             * @brief evaluate the sum of square of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the arithmetic sum of square of unmasked data
+             */
+            T sum_of_square(M bad_bits = kAllBits) const
+            {
+                std::valarray<T> _v = fData[good(bad_bits)];
+                return (_v*_v).sum();
+            }
+
+            /**
+             * @brief evaluate the mean of square of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the arithmetic mean of square of unmasked data
+             */
+            double mean_of_square(M bad_bits = kAllBits) const
+            {
+                return static_cast<double>(sum_of_square(bad_bits))/static_cast<double>(count(bad_bits));
+            }
+
+            /**
+             * @brief evaluate the quadratic mean of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the quadratic mean of unmasked data
+             */
+            double quadratic_mean(M bad_bits = kAllBits) const
+            {
+                return std::sqrt(mean_of_square(bad_bits));
+            }
+
+            /**
+             * @brief evaluate the variance of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the variance of unmasked data
+             */
+            double variance(M bad_bits = kAllBits) const
+            {
+                double _m = mean(bad_bits);
+                double _n = static_cast<double>(count(bad_bits));
+                return ( mean_of_square(bad_bits) - _m*_m )* (_n) / (_n - 1) ;
+            }
+
+            /**
+             * @brief evaluate the error on the variance of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the error on the variance of unmasked data
+             */
+            double variance_error(M bad_bits = kAllBits) const
+            {
+                double _v = 0;
+                double _n = 0;
+                double vv = variance(bad_bits);
+                double m = mean(bad_bits);
+
+                for (size_t i = 0; i < fData.size(); i++)
+                {
+                    if (!(fMask[i] & bad_bits))
+                    {
+                        _v += (static_cast<double>(fData[i]) - m)*(static_cast<double>(fData[i]) - m)*(static_cast<double>(fData[i]) - m)*(static_cast<double>(fData[i]) - m);
+                        _n++;
+                    }
+                }
+
+                _v /= _n;
+                double b = (_n - 3) / (_n - 1) * vv * vv;
+
+                return std::sqrt((_v - b) / _n);
+            }
+
+            /**
+             * @brief evaluate the covariance of unmasked data between a set of two BitMaskedArray
+             * @param ma BitMaskedArray to be used to compute the covariance
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the covariance between the two BitMaskedArray
+             */
+            double covariance(const BitMaskedArray<T,M>& ma, M bad_bits = kAllBits) const
+            {
+                if (ma.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::covariance: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                std::valarray<M> msk_array(fMask.size());
+                msk_array &= M(0);
+                msk_array |= fMask;
+                msk_array |= ma.fMask;
+
+                std::valarray<M> _sel = msk_array & bad_bits;
+                std::valarray<bool> _good = _sel == M(0);
+
+                std::valarray<T> _v1 = fData[_good];
+                std::valarray<T> _v2 = ma.fData[_good];
+
+                return static_cast<double>((_v2*_v1).sum())/static_cast<double>(_v1.size());
+            }
+
+            /**
+             * @brief Identify the first index of the minimum value of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return Index of the minimum value which is unmasked
+             */
+            size_t find_minimum(M bad_bits = kAllBits) const
+            {
+                std::valarray<T> readings(fData.size());
+                readings *= 0;
+                readings += fData;
+
+                readings[bad(bad_bits)] = std::numeric_limits<T>::max();
+
+                size_t index = std::distance(std::begin(readings), std::min_element(std::begin(readings), std::end(readings)));
+
+                return index;
+            }
+
+            /**
+             * @brief Identify the first index of the maximum value of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return Index of the maximum value which is unmasked
+             */
+            size_t find_maximum(M bad_bits = kAllBits) const
+            {
+                std::valarray<T> readings(fData.size());
+                readings *= 0;
+                readings += fData;
+
+                readings[bad(bad_bits)] = -1*std::numeric_limits<T>::max();
+
+                size_t index = std::distance(std::begin(readings), std::max_element(std::begin(readings), std::end(readings)));
+
+                return index;
+            }
+
+            /**
+             * @brief evaluate the median of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the median of unmasked data
+             */
+            T median(M bad_bits = kAllBits) const
+            {
+                std::valarray<T> readings(count(bad_bits));
+                readings *= 0;
+                readings += (std::valarray<T>) fData[good(bad_bits)];
+
+                if (readings.size() < 1)
+                    throw std::invalid_argument("BitMaskedArray::median: no umasked data available do compute median ["+std::to_string(__LINE__)+"]");
+
+
+                std::sort(std::begin(readings), std::end(readings));
+
+                size_t index = 0;
+                if (readings.size() < 2)
+                    return readings[index];
+                else if (!(readings.size() % 2))
+                {
+                    index = readings.size()/2;
+                    return (readings[index-1]+readings[index])/2;
+                }
+                else
+                {
+                    index = readings.size()/2;
+                    return readings[index];
+                }
+
+                return readings[index];
+            }
+
+            /**
+             * @brief evaluate the median absolute deviation of unmasked data
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return the median absolute deviation of unmasked data
+             */
+            T nmad(M bad_bits = kAllBits) const
+            {
+                T med = median(bad_bits);
+                BitMaskedArray<T,M> mad_array(std::abs((std::valarray<T>)fData[good(bad_bits)]-med));
+                return mad_array.median();
+            }
+
+#pragma endregion
+#pragma region interoperability and flag helpers
+
+            /**
+             * @brief Convert to a boolean MaskedArray
+             * @param bad_bits Bits of the mask considered as bad (default: all bits).
+             * @return MaskedArray sharing the same data, masked where (mask & bad_bits) != 0
+             */
+            MaskedArray<T> to_masked(M bad_bits = kAllBits) const
+            {
+                std::valarray<bool> _m = bad(bad_bits);
+                return MaskedArray<T>(fData, _m);
+            }
+
+            /**
+             * @brief Raise flag bits on a single element
+             * @param idx Index of the element
+             * @param bits Flag bits to be raised
+             */
+            void set_flag(size_t idx, M bits)
+            {
+                if (idx >= fMask.size())
+                    throw std::out_of_range("BitMaskedArray::set_flag: index out of range ["+std::to_string(__LINE__)+"]");
+
+                fMask[idx] |= bits;
+            }
+
+            /**
+             * @brief Clear flag bits on a single element
+             * @param idx Index of the element
+             * @param bits Flag bits to be cleared
+             */
+            void clear_flag(size_t idx, M bits)
+            {
+                if (idx >= fMask.size())
+                    throw std::out_of_range("BitMaskedArray::clear_flag: index out of range ["+std::to_string(__LINE__)+"]");
+
+                fMask[idx] &= static_cast<M>(~bits);
+            }
+
+            /**
+             * @brief Test flag bits on a single element
+             * @param idx Index of the element
+             * @param bits Flag bits to be tested
+             * @return true if any of the requested bits is raised
+             */
+            bool test_flag(size_t idx, M bits) const
+            {
+                if (idx >= fMask.size())
+                    throw std::out_of_range("BitMaskedArray::test_flag: index out of range ["+std::to_string(__LINE__)+"]");
+
+                return (fMask[idx] & bits) != M(0);
+            }
+
+            /**
+             * @brief Raise flag bits on every element
+             * @param bits Flag bits to be raised
+             */
+            void set_flag(M bits) { fMask |= bits; }
+
+            /**
+             * @brief Clear flag bits on every element
+             * @param bits Flag bits to be cleared
+             */
+            void clear_flag(M bits) { fMask &= static_cast<M>(~bits); }
+
+            /**
+             * @brief Test flag bits on every element
+             * @param bits Flag bits to be tested
+             * @return boolean valarray, true where any of the requested bits is raised
+             */
+            std::valarray<bool> test_flag(M bits) const { return bad(bits); }
+
+#pragma endregion
+#pragma region operator
+
+            /**
+             * @brief operator to add two BitMaskedArray
+             * @param ma BitMaskedArray to be added to this
+             * @details 'this' is transformed with the addition of ma. The addition of the masked data is evaluated as if unmasked but the fMask of this is updated with the union of the flag bits of ma
+             */
+            void operator+=(const BitMaskedArray<T,M>& ma)
+            {
+                if (ma.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator+=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fData += ma.fData;
+                fMask |= ma.fMask;
+            }
+
+            /**
+             * @brief operator to substract two BitMaskedArray
+             * @param ma BitMaskedArray to be substracted to this
+             * @details 'this' is transformed with the substraction of ma. The substraction of the masked data is evaluated as if unmasked but the fMask of this is updated with the union of the flag bits of ma
+             */
+            void operator-=(const BitMaskedArray<T,M>& ma)
+            {
+                if (ma.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator-=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fData -= ma.fData;
+                fMask |= ma.fMask;
+            }
+
+            /**
+             * @brief operator to multiply two BitMaskedArray
+             * @param ma BitMaskedArray to be multiplied to this
+             * @details 'this' is transformed with the multiplication of ma. The multiplication of the masked data is evaluated as if unmasked but the fMask of this is updated with the union of the flag bits of ma
+             */
+            void operator*=(const BitMaskedArray<T,M>& ma)
+            {
+                if (ma.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator*=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fData *= ma.fData;
+                fMask |= ma.fMask;
+            }
+
+            /**
+             * @brief operator to divide two BitMaskedArray
+             * @param ma BitMaskedArray to be divided to this
+             * @details 'this' is transformed with the division of ma. The division of the masked data is evaluated as if unmasked but the fMask of this is updated with the union of the flag bits of ma
+             */
+            void operator/=(const BitMaskedArray<T,M>& ma)
+            {
+                if (ma.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator/=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fData /= ma.fData;
+                fMask |= ma.fMask;
+            }
+
+            /**
+             * @brief operator to add a value to the BitMaskedArray
+             * @param val value to be added to the BitMaskedArray
+             * @details 'this' is transformed with the addition of val. The addition of the masked data is evaluated as if unmasked but mask isn't modified as no mask information is provided as input
+             */
+            void operator+=(const T& val){fData += val;}
+
+            /**
+             * @brief operator to substract a value to the BitMaskedArray
+             * @param val value to be substracted to the BitMaskedArray
+             * @details 'this' is transformed with the subsraction of val. The substraction of the masked data is evaluated as if unmasked but mask isn't modified as no mask information is provided as input
+             */
+            void operator-=(const T& val){fData -= val;}
+
+            /**
+             * @brief operator to multiply a value to the BitMaskedArray
+             * @param val value to be multiplied to the BitMaskedArray
+             * @details 'this' is transformed with the multiplication of val. The multiplication of the masked data is evaluated as if unmasked but mask isn't modified as no mask information is provided as input
+             */
+            void operator*=(const T& val){fData *= val;}
+
+            /**
+             * @brief operator to divide a value to the BitMaskedArray
+             * @param val value to be divided to the BitMaskedArray
+             * @details 'this' is transformed with the division of val. The division of the masked data is evaluated as if unmasked but mask isn't modified as no mask information is provided as input
+             */
+            void operator/=(const T& val){fData /= val;}
+
+            /**
+             * @brief operator to add values to the BitMaskedArray
+             * @param val value to be added to the BitMaskedArray
+             * @details 'this' is transformed with the addition of val. The addition of the masked data is evaluated as if unmasked but mask isn't modified as no mask information is provided as input
+             */
+            void operator+=(const std::valarray<T>& val)
+            {
+                if (val.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator+=: data size mismatch ["+std::to_string(__LINE__)+"]");
+                fData += val;
+            }
+
+            /**
+             * @brief operator to substract values to the BitMaskedArray
+             * @param val value to be substracted to the BitMaskedArray
+             * @details 'this' is transformed with the substraction of val. The substraction of the masked data is evaluated as if unmasked but mask isn't modified as no mask information is provided as input
+             */
+            void operator-=(const std::valarray<T>& val)
+            {
+                if (val.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator-=: data size mismatch ["+std::to_string(__LINE__)+"]");
+                fData -= val;
+            }
+
+            /**
+             * @brief operator to multiply values to the BitMaskedArray
+             * @param val value to be multiplied to the BitMaskedArray
+             * @details 'this' is transformed with the multiplication of val. The multiplication of the masked data is evaluated as if unmasked but mask isn't modified as no mask information is provided as input
+             */
+            void operator*=(const std::valarray<T>& val)
+            {
+                if (val.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator*=: data size mismatch ["+std::to_string(__LINE__)+"]");
+                fData *= val;
+            }
+
+            /**
+             * @brief operator to divide values to the BitMaskedArray
+             * @param val value to be divided to the BitMaskedArray
+             * @details 'this' is transformed with the division of val. The division of the masked data is evaluated as if unmasked but mask isn't modified as no mask information is provided as input
+             */
+            void operator/=(const std::valarray<T>& val){fData /= val;}
+
+            void operator|=(const M& mask){fMask |= mask;}
+            void operator&=(const M& mask){fMask &= mask;}
+            void operator^=(const M& mask){fMask ^= mask;}
+
+            void operator|=(const BitMaskedArray<T,M>& ma)
+            {
+                if (ma.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator|=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fMask |= ma.fMask;
+            }
+
+            void operator&=(const BitMaskedArray<T,M>& ma)
+            {
+                if (ma.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator&=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fMask &= ma.fMask;
+            }
+
+            void operator^=(const BitMaskedArray<T,M>& ma)
+            {
+                if (ma.size() != fData.size())
+                    throw std::invalid_argument("BitMaskedArray::operator^=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fMask ^= ma.fMask;
+            }
+
+            void operator|=(const std::valarray<M>& mask)
+            {
+                if (mask.size() != fMask.size())
+                    throw std::invalid_argument("BitMaskedArray::operator|=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fMask |= mask;
+            }
+
+            void operator&=(const std::valarray<M>& mask)
+            {
+                if (mask.size() != fMask.size())
+                    throw std::invalid_argument("BitMaskedArray::operator&=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fMask &= mask;
+            }
+
+            void operator^=(const std::valarray<M>& mask)
+            {
+                if (mask.size() != fMask.size())
+                    throw std::invalid_argument("BitMaskedArray::operator^=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+                fMask ^= mask;
+            }
+        };
+
+#pragma endregion
 #pragma region - Logical Opperator
         template <class T>
         std::valarray<bool> operator!=(const MaskedArray<T>& a, const MaskedArray<T>& b)
@@ -916,6 +1825,160 @@ namespace DST
         {
             return a >= b;
         }
+
+        /*
+         * BitMaskedArray comparison operators: elements are considered masked when any
+         * flag bit is raised (mask != 0), since operators cannot carry a bad_bits argument.
+         */
+        template <class T, class M>
+        std::valarray<bool> operator!=(const BitMaskedArray<T,M>& a, const BitMaskedArray<T,M>& b)
+        {
+            if (a.size() != b.size())
+                throw std::invalid_argument("BitMaskedArray::operator!=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() != b.data()) && (a.mask() != b.mask());
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator!=(const BitMaskedArray<T,M>& a, const T& b)
+        {
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() != b) && (a.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator!=(const T& b, const BitMaskedArray<T,M>& a)
+        {
+            return a != b;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator==(const BitMaskedArray<T,M>& a, const BitMaskedArray<T,M>& b)
+        {
+            if (a.size() != b.size())
+                throw std::invalid_argument("BitMaskedArray::operator==: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() == b.data()) && (a.mask() == b.mask());
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator==(const BitMaskedArray<T,M>& a, const T& b)
+        {
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() == b) && (a.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator==(const T& b, const BitMaskedArray<T,M>& a)
+        {
+            return a == b;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator>(const BitMaskedArray<T,M>& a, const BitMaskedArray<T,M>& b)
+        {
+            if (a.size() != b.size())
+                throw std::invalid_argument("BitMaskedArray::operator>: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() > b.data()) && (a.mask() == M(0)) && (b.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator>(const BitMaskedArray<T,M>& a, const T& b)
+        {
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() > b) && (a.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator>(const T& b, const BitMaskedArray<T,M>& a)
+        {
+            return a < b;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator<(const BitMaskedArray<T,M>& a, const BitMaskedArray<T,M>& b)
+        {
+            if (a.size() != b.size())
+                throw std::invalid_argument("BitMaskedArray::operator<: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() < b.data()) && (a.mask() == M(0)) && (b.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator<(const BitMaskedArray<T,M>& a, const T& b)
+        {
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() < b) && (a.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator<(const T& b, const BitMaskedArray<T,M>& a)
+        {
+            return a > b;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator>=(const BitMaskedArray<T,M>& a, const BitMaskedArray<T,M>& b)
+        {
+            if (a.size() != b.size())
+                throw std::invalid_argument("BitMaskedArray::operator>=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() >= b.data()) && (a.mask() == M(0)) && (b.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator>=(const BitMaskedArray<T,M>& a, const T& b)
+        {
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() >= b) && (a.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator>=(const T& b, const BitMaskedArray<T,M>& a)
+        {
+            return a <= b;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator<=(const BitMaskedArray<T,M>& a, const BitMaskedArray<T,M>& b)
+        {
+            if (a.size() != b.size())
+                throw std::invalid_argument("BitMaskedArray::operator<=: data size mismatch ["+std::to_string(__LINE__)+"]");
+
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() <= b.data()) && (a.mask() == M(0)) && (b.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator<=(const BitMaskedArray<T,M>& a, const T& b)
+        {
+            std::valarray<bool> _ma(a.size());
+            _ma = (a.data() <= b) && (a.mask() == M(0));
+            return _ma;
+        }
+
+        template <class T, class M>
+        std::valarray<bool> operator<=(const T& b, const BitMaskedArray<T,M>& a)
+        {
+            return a >= b;
+        }
     }
 }
 
@@ -927,6 +1990,14 @@ std::ostream& operator<<(std::ostream& os, const DST::Math::MaskedArray<T>& v)
 {
     for (size_t i = 0; i < v.size(); i++)
         os << ' ' << v.data()[i] << '[' << ((v.mask()[i])?"\033[32mtrue\033[0m":"\033[31mfalse\033[0m")<<"]";
+    return os;
+}
+
+template <class T, class M>
+std::ostream& operator<<(std::ostream& os, const DST::Math::BitMaskedArray<T,M>& v)
+{
+    for (size_t i = 0; i < v.size(); i++)
+        os << ' ' << v.data()[i] << '[' << ((v.mask()[i] != M(0))?"\033[31m":"\033[32m") << static_cast<uint64_t>(v.mask()[i]) << "\033[0m]";
     return os;
 }
 

@@ -1325,3 +1325,268 @@ TEST(math_array, test_equality_operator)
     }
 
 }
+
+TEST(math_array, test_bitmasked_ctor)
+{
+    typedef BitMaskedArray<double, uint8_t> BitMaskedArrayD8;
+
+    const BitMaskedArrayD8 bma;
+    EXPECT_EQ(bma.size(), 0);
+    EXPECT_EQ(bma.mask().size(), 0);
+    EXPECT_EQ(bma.data().size(), 0);
+
+    const BitMaskedArrayD8 bma1(10);
+    EXPECT_EQ(bma1.size(), 10);
+    EXPECT_EQ(bma1.mask().size(), 10);
+    EXPECT_EQ(bma1.data().size(), 10);
+
+    for (size_t i = 0; i < bma1.size(); i++)
+    {
+        EXPECT_NEAR(bma1.data()[i], 0, 1e-10);
+        EXPECT_EQ(bma1.mask()[i], 0);
+    }
+
+    const BitMaskedArrayD8 bma2(10, 1.0);
+    for (size_t i = 0; i < bma2.size(); i++)
+    {
+        EXPECT_NEAR(bma2.data()[i], 1.0, 1e-10);
+        EXPECT_EQ(bma2.mask()[i], 0);
+    }
+
+    std::valarray<double>  tdata(100);
+    std::valarray<uint8_t> tmask(100);
+
+    for (size_t i = 0; i < tdata.size(); i++)
+    {
+        tdata[i] = static_cast<double>(i);
+        tmask[i] = static_cast<uint8_t>(i % 4);
+    }
+
+    const BitMaskedArrayD8 bma3(tdata, tmask);
+    EXPECT_EQ(bma3.size(), tdata.size());
+    for (size_t i = 0; i < bma3.size(); i++)
+    {
+        EXPECT_NEAR(bma3.data()[i], tdata[i], 1e-10);
+        EXPECT_EQ(bma3.mask()[i], tmask[i]);
+    }
+
+    std::vector<double>  vdata(tdata.size());
+    std::vector<uint8_t> vmask(tmask.size());
+    std::copy(std::begin(tdata), std::end(tdata), vdata.begin());
+    std::copy(std::begin(tmask), std::end(tmask), vmask.begin());
+
+    const BitMaskedArrayD8 bma4(vdata, vmask);
+    for (size_t i = 0; i < bma4.size(); i++)
+    {
+        EXPECT_NEAR(bma4.data()[i], tdata[i], 1e-10);
+        EXPECT_EQ(bma4.mask()[i], tmask[i]);
+    }
+
+    const BitMaskedArrayD8 bma5(bma3);
+    for (size_t i = 0; i < bma5.size(); i++)
+    {
+        EXPECT_NEAR(bma5.data()[i], tdata[i], 1e-10);
+        EXPECT_EQ(bma5.mask()[i], tmask[i]);
+    }
+
+    // every supported mask width instanciates
+    const BitMaskedArray<float, uint16_t>   bma16(5, 2.0f);
+    EXPECT_EQ(bma16.count(), 5);
+    const BitMaskedArray<int32_t, uint32_t> bma32(5);
+    EXPECT_EQ(bma32.count(), 5);
+    const BitMaskedArray<double, uint64_t>  bma64(5);
+    EXPECT_EQ(bma64.count(), 5);
+
+    EXPECT_ANY_THROW(BitMaskedArrayD8(tdata, std::valarray<uint8_t>(tdata.size()-1)));
+    EXPECT_ANY_THROW(BitMaskedArrayD8(tdata, std::valarray<uint8_t>(tdata.size()+1)));
+
+    EXPECT_ANY_THROW(BitMaskedArrayD8(vdata, std::vector<uint8_t>(vdata.size()-1)));
+    EXPECT_ANY_THROW(BitMaskedArrayD8(vdata, std::vector<uint8_t>(vdata.size()+1)));
+}
+
+TEST(math_array, test_bitmasked_statistics)
+{
+    typedef BitMaskedArray<double, uint8_t> BitMaskedArrayD8;
+
+    std::valarray<double>  tdata = {1., 2., 3., 4., 5., 6., 7., 8., 9., 10.};
+    std::valarray<uint8_t> tmask = {0x01, 0x01, 0x02, 0x02, 0x00, 0x00, 0x00, 0x00,0x12, 0x12};
+
+    const BitMaskedArrayD8 bma(tdata, tmask);
+
+    // default bad_bits: any raised flag masks the element
+    EXPECT_EQ(bma.count(), 4);
+    EXPECT_NEAR(bma.sum(), 26.0, 1e-10);
+    EXPECT_NEAR(bma.mean(), 6.5, 1e-10);
+    EXPECT_NEAR(bma.min(), 5.0, 1e-10);
+    EXPECT_NEAR(bma.max(), 8.0, 1e-10);
+    EXPECT_NEAR(bma.median(), 6.5, 1e-10);
+    EXPECT_NEAR(bma.variance(), 5.0/3.0, 1e-10);
+    EXPECT_NEAR(bma.nmad(), 1.0, 1e-10);
+    EXPECT_EQ(bma.find_minimum(), 4);
+    EXPECT_EQ(bma.find_maximum(), 7);
+
+    // selective bad_bits: only bit 0 masks, elements flagged 0x02 are used
+    EXPECT_EQ(bma.count(0x01), 8);
+    EXPECT_NEAR(bma.sum(0x01), 52.0, 1e-10);
+    EXPECT_NEAR(bma.mean(0x01), 6.5, 1e-10);
+    EXPECT_NEAR(bma.min(0x01), 3.0, 1e-10);
+    EXPECT_NEAR(bma.max(0x01), 10., 1e-10);
+    EXPECT_EQ(bma.find_minimum(0x01), 2);
+    EXPECT_EQ(bma.find_maximum(0x01), 9);
+
+    // selective bad_bits: only bit 1 masks, elements flagged 0x01 are used
+    EXPECT_EQ(bma.count(0x02), 6);
+    EXPECT_NEAR(bma.sum(0x02), 29.0, 1e-10);
+    EXPECT_NEAR(bma.min(0x02), 1.0, 1e-10);
+    EXPECT_NEAR(bma.max(0x02), 8.0, 1e-10);
+    EXPECT_EQ(bma.find_minimum(0x02), 0);
+    EXPECT_EQ(bma.find_maximum(0x02), 7);
+
+    // covariance with itself is the mean of square of the unmasked data
+    EXPECT_NEAR(bma.covariance(bma), bma.mean_of_square(), 1e-10);
+    EXPECT_ANY_THROW(bma.covariance(BitMaskedArrayD8(4)));
+
+    // masking every element leaves no data to compute a median
+    const BitMaskedArrayD8 bma_all(tdata, std::valarray<uint8_t>(uint8_t(0x04), tdata.size()));
+    EXPECT_EQ(bma_all.count(), 0);
+    EXPECT_EQ(bma_all.count(0x01), tdata.size());
+    EXPECT_ANY_THROW(bma_all.median());
+}
+
+TEST(math_array, test_bitmasked_element_accessor)
+{
+    typedef BitMaskedArray<double, uint8_t> BitMaskedArrayD8;
+
+    std::valarray<double>  tdata = {1., 2., 3., 4.};
+    std::valarray<uint8_t> tmask = {0x00, 0x01, 0x02, 0x03};
+
+    BitMaskedArrayD8 bma(tdata, tmask);
+
+    // flag() mirrors operator[] on the mask side
+    for (size_t i = 0; i < bma.size(); i++)
+    {
+        EXPECT_NEAR(bma[i], tdata[i], 1e-10);
+        EXPECT_EQ(bma.flag(i), tmask[i]);
+        EXPECT_EQ(bma.flag(i), bma.mask()[i]);
+    }
+
+    // both accessors are mutable lvalues
+    bma[0]      = 42.0;
+    bma.flag(0) = 0x08;
+    EXPECT_NEAR(bma[0], 42.0, 1e-10);
+    EXPECT_EQ(bma.mask()[0], 0x08);
+
+    // is_masked follows the bad_bits convention of the statistics
+    EXPECT_TRUE(bma.is_masked(0));
+    EXPECT_FALSE(bma.is_masked(0, 0x01));
+    EXPECT_TRUE(bma.is_masked(1, 0x01));
+    EXPECT_FALSE(bma.is_masked(1, 0x02));
+    EXPECT_TRUE(bma.is_masked(3, 0x01));
+    EXPECT_TRUE(bma.is_masked(3, 0x02));
+
+    // is_masked agrees with the selection used by count()
+    size_t unmasked = 0;
+    for (size_t i = 0; i < bma.size(); i++)
+        if (!bma.is_masked(i, 0x01)) unmasked++;
+    EXPECT_EQ(unmasked, bma.count(0x01));
+
+    // both are range checked, like operator[]
+    const BitMaskedArrayD8 cbma(tdata, tmask);
+    EXPECT_EQ(cbma.flag(2), 0x02);
+    EXPECT_ANY_THROW(cbma.flag(4));
+    EXPECT_ANY_THROW(bma.flag(4));
+    EXPECT_ANY_THROW(bma.is_masked(4));
+}
+
+TEST(math_array, test_bitmasked_flag_helpers)
+{
+    typedef BitMaskedArray<double, uint8_t> BitMaskedArrayD8;
+
+    BitMaskedArrayD8 bma(10, 1.0);
+
+    EXPECT_FALSE(bma.test_flag(3, 0x04));
+    bma.set_flag(3, 0x05);
+    EXPECT_TRUE(bma.test_flag(3, 0x04));
+    EXPECT_TRUE(bma.test_flag(3, 0x01));
+    EXPECT_FALSE(bma.test_flag(3, 0x02));
+    EXPECT_EQ(bma.mask()[3], 0x05);
+
+    bma.clear_flag(3, 0x01);
+    EXPECT_EQ(bma.mask()[3], 0x04);
+
+    // whole array variants
+    bma.set_flag(0x80);
+    std::valarray<bool> raised = bma.test_flag(0x80);
+    for (size_t i = 0; i < raised.size(); i++)
+        EXPECT_TRUE(raised[i]);
+    EXPECT_EQ(bma.count(), 0);
+    EXPECT_EQ(bma.count(0x04), 9);
+
+    bma.clear_flag(0x80);
+    EXPECT_EQ(bma.count(), 9);
+    EXPECT_EQ(bma.mask()[3], 0x04);
+
+    EXPECT_ANY_THROW(bma.set_flag(10, 0x01));
+    EXPECT_ANY_THROW(bma.clear_flag(10, 0x01));
+    EXPECT_ANY_THROW(bma.test_flag(10, 0x01));
+
+    // conversion to a boolean MaskedArray
+    MaskedArray<double> conv = bma.to_masked();
+    EXPECT_EQ(conv.size(), bma.size());
+    for (size_t i = 0; i < conv.size(); i++)
+    {
+        EXPECT_NEAR(conv.data()[i], bma.data()[i], 1e-10);
+        EXPECT_EQ(conv.mask()[i], bma.mask()[i] != 0);
+    }
+
+    MaskedArray<double> conv2 = bma.to_masked(0x01);
+    for (size_t i = 0; i < conv2.size(); i++)
+        EXPECT_FALSE(conv2.mask()[i]);
+}
+
+TEST(math_array, test_bitmasked_operators)
+{
+    typedef BitMaskedArray<float, uint32_t> BitMaskedArrayF32;
+
+    std::valarray<float>    adata = {1.f, 2.f, 3.f, 4.f};
+    std::valarray<uint32_t> amask = {0x1u, 0x0u, 0x0u, 0x0u};
+
+    std::valarray<float>    bdata = {10.f, 20.f, 30.f, 40.f};
+    std::valarray<uint32_t> bmask = {0x0u, 0x2u, 0x0u, 0x0u};
+
+    BitMaskedArrayF32 a(adata, amask);
+    const BitMaskedArrayF32 b(bdata, bmask);
+
+    a += b;
+    EXPECT_NEAR(a.data()[0], 11.f, 1e-6);
+    EXPECT_NEAR(a.data()[1], 22.f, 1e-6);
+    EXPECT_EQ(a.mask()[0], 0x1u);
+    EXPECT_EQ(a.mask()[1], 0x2u);
+    EXPECT_EQ(a.mask()[2], 0x0u);
+
+    a *= 2.0f;
+    EXPECT_NEAR(a.data()[3], 88.f, 1e-6);
+    EXPECT_EQ(a.mask()[3], 0x0u);
+
+    a |= 0x4u;
+    for (size_t i = 0; i < a.size(); i++)
+        EXPECT_TRUE((a.mask()[i] & 0x4u) != 0);
+
+    a ^= 0x4u;
+    EXPECT_EQ(a.mask()[0], 0x1u);
+    EXPECT_EQ(a.mask()[1], 0x2u);
+
+    EXPECT_ANY_THROW(a += BitMaskedArrayF32(3));
+    EXPECT_ANY_THROW(a |= BitMaskedArrayF32(3));
+
+    // comparison operators treat any raised flag as masked
+    std::valarray<bool> gt = (a > 0.0f);
+    EXPECT_FALSE(gt[0]);
+    EXPECT_FALSE(gt[1]);
+    EXPECT_TRUE(gt[2]);
+    EXPECT_TRUE(gt[3]);
+
+    std::valarray<bool> eq = (a == a);
+    for (size_t i = 0; i < eq.size(); i++)
+        EXPECT_TRUE(eq[i]);
+}
