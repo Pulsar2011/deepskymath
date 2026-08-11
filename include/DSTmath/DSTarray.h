@@ -21,6 +21,7 @@
 #include <type_traits>
 #include <limits>
 #include <cmath>
+#include <ostream>  // the stream operators below need a complete std::ostream
 
 namespace DST
 {
