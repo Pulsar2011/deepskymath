@@ -1144,9 +1144,238 @@ namespace DST
             return static_cast<float>( val );
         }
 
+        // ----------------------------------------------------------------------------
+        // Legacy 2D expansion: the pre-2026 convention of A&A 707, A227 (2026).
+        // ----------------------------------------------------------------------------
+
+        /**
+         *  Evaluate the pre-2026 2D expansion at \f$(x,y)\f$, the basis in which the NISP
+         *  spectroscopic calibration coefficients of A&A 707, A227 (2026),
+         *  https://doi.org/10.1051/0004-6361/202555859, are expressed.
+         *
+         *  @details This is NOT a Chebyshev tensor product. The routine that produced those
+         *  coefficients did not reset the unit vector driving the second axis between rows,
+         *  so the last entry set by one pass of the inner loop survived into the next. From
+         *  the second row onwards the second factor was therefore
+         *  \f$T_j(y') + T_{n_y-1}(y')\f$ rather than \f$T_j(y')\f$, except at
+         *  \f$j = n_y-1\f$ where it was correct. Row 0 was unaffected, and so were all
+         *  expansions with \f$n_x = 1\f$ or \f$n_y = 1\f$.
+         *
+         *  The loop is reproduced verbatim rather than expressed through
+         *  chebev2LegacyToStandard(): an independent implementation is what makes the
+         *  equivalence between the two representations testable rather than circular. It is
+         *  frozen -- it documents an archived convention and must not be "improved".
+         *
+         *  The legacy functions are an invertible linear transformation of the Chebyshev
+         *  tensor basis, hence span the same space. A surface fitted and evaluated wholly
+         *  in this convention is exactly the surface a correct implementation would have
+         *  found; only the coefficient representation differs. Published results obtained
+         *  this way are correct.
+         *
+         *  @param x evaluate the expansion at cartesian coordinates \f$(x,y)\f$. x must be a 2D array.
+         *  @param aij Legacy coefficients, flattened row major, \f$n_x\f$ rows of \f$n_y\f$.
+         *  @param a Lower edge of the range. a must be a 2D array
+         *  @param b Upper edge of the range. b must be a 2D array
+         *  @param order Expansion order along \f$x\f$ and \f$y\f$, \f$\{n_x, n_y\}\f$.
+         *
+         *  @return The legacy surface at \f$(x,y)\f$.
+         *  @throw std::invalid_argument on the same conditions as chebev2().
+         *  @see chebev2LegacyToStandard(), chebev2()
+         */
+        double polynom::chebev2_legacy(double *x, std::vector<double> aij, double *a, double *b, std::vector<unsigned int> order)
+        {
+            if(order.size() < 1)
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2_legacy] Errors ***\033[0m Can't compute chebichev polynome without knowing its dimensions. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            const unsigned int nx = order[0];
+            const unsigned int ny = (order.size() >= 2)? order[1] : nx;
+
+            if(nx == 0 || ny == 0)
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2_legacy] Errors ***\033[0m The chebychev expansion order is zero along at least one axis. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            if(aij.size() < static_cast<size_t>(nx)*static_cast<size_t>(ny))
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2_legacy] Errors ***\033[0m The dimensions of the truncated chebychev coeficient 'a' are insuficient. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            std::vector<double> cx(nx, 0.);
+            std::vector<double> cy(ny, 0.);
+
+            double val = 0;
+
+            // Verbatim from the original: plain assignment, and cy carried across rows.
+            // The row stride is ny, which the original had right -- only the reset was
+            // wrong. Do not "fix" the reset here; that is the whole point of this function.
+            for(unsigned int i = 0; i < nx; i++)
+            {
+                if(i > 0)
+                    cx[i-1] = 0;
+                cx[i] = 1;
+
+                for(unsigned int j = 0; j < ny; j++)
+                {
+                    const size_t k = static_cast<size_t>(i)*static_cast<size_t>(ny) + j;
+
+                    if(j > 0)
+                        cy[j-1] = 0;
+                    cy[j] = 1;
+
+                    val += aij[k]*chebev(x[0],cx,a[0],b[0],static_cast<unsigned int>(cx.size()))
+                                 *chebev(x[1],cy,a[1],b[1],static_cast<unsigned int>(cy.size()));
+                }
+            }
+
+            return val;
+        }
+
+        /// @copydoc polynom::chebev2_legacy(double*, std::vector<double>, double*, double*, std::vector<unsigned int>)
+        float polynom::chebev2_legacy(float *x, std::vector<float> aij, float *a, float *b, std::vector<unsigned int> order)
+        {
+            double d_x[2] = {static_cast<double>(x[0]), static_cast<double>(x[1])};
+            double d_a[2] = {static_cast<double>(a[0]), static_cast<double>(a[1])};
+            double d_b[2] = {static_cast<double>(b[0]), static_cast<double>(b[1])};
+
+            std::vector<double> d_aij;
+            d_aij.reserve(aij.size());
+            for(size_t i = 0; i < aij.size(); i++)
+                d_aij.push_back(static_cast<double>(aij[i]));
+
+            return static_cast<float>( chebev2_legacy(d_x, d_aij, d_a, d_b, order) );
+        }
+
+        /**
+         *  Convert legacy coefficients into standard Chebyshev tensor product coefficients.
+         *
+         *  @details Expanding the legacy basis in the Chebyshev one leaves every coefficient
+         *  untouched except the last of each row after the first, which absorbs the
+         *  contamination that row contributed to \f$T_{n_y-1}(y')\f$:
+         *
+         *  \f[ b_{ij} = a_{ij}, \qquad
+         *      b_{i,n_y-1} = a_{i,n_y-1} + \sum_{j=0}^{n_y-2} a_{ij} \quad (i \ge 1) \f]
+         *
+         *  Row 0 is unchanged, and so is everything when \f$n_x = 1\f$ or \f$n_y = 1\f$,
+         *  which is consistent with those shapes never having been affected.
+         *
+         *  The result satisfies, exactly:
+         *  chebev2(x, chebev2LegacyToStandard(aij, order), a, b, order)
+         *      == chebev2_legacy(x, aij, a, b, order)
+         *
+         *  Use this to read the coefficients published in A&A 707, A227 (2026), or any
+         *  calibration product that carries no convention keyword, with a standard
+         *  evaluator.
+         *
+         *  @param aij Legacy coefficients, flattened row major, \f$n_x\f$ rows of \f$n_y\f$.
+         *  @param order Expansion order, \f$\{n_x, n_y\}\f$.
+         *  @return Standard Chebyshev coefficients, same layout and size.
+         *  @throw std::invalid_argument on the same conditions as chebev2().
+         *  @see chebev2StandardToLegacy(), chebev2_legacy()
+         */
+        std::vector<double> polynom::chebev2LegacyToStandard(const std::vector<double>& aij, std::vector<unsigned int> order)
+        {
+            if(order.size() < 1)
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2LegacyToStandard] Errors ***\033[0m Can't convert without knowing the dimensions. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            const unsigned int nx = order[0];
+            const unsigned int ny = (order.size() >= 2)? order[1] : nx;
+
+            if(nx == 0 || ny == 0)
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2LegacyToStandard] Errors ***\033[0m The expansion order is zero along at least one axis. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            if(aij.size() < static_cast<size_t>(nx)*static_cast<size_t>(ny))
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2LegacyToStandard] Errors ***\033[0m The coefficient matrix is too small for the requested order. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            std::vector<double> out(aij);
+
+            for(unsigned int i = 1; i < nx; i++)
+            {
+                double row = 0.;
+                for(unsigned int j = 0; j + 1 < ny; j++)
+                    row += aij[static_cast<size_t>(i)*static_cast<size_t>(ny) + j];
+
+                out[static_cast<size_t>(i)*static_cast<size_t>(ny) + (ny-1)] += row;
+            }
+
+            return out;
+        }
+
+        /**
+         *  Convert standard Chebyshev tensor product coefficients into the legacy basis.
+         *  @details Exact inverse of chebev2LegacyToStandard(). Use it to express a new fit
+         *  in the convention of the published products, or to feed a consumer that still
+         *  implements the legacy evaluation.
+         *  @param aij Standard Chebyshev coefficients, flattened row major.
+         *  @param order Expansion order, \f$\{n_x, n_y\}\f$.
+         *  @return Legacy coefficients, same layout and size.
+         *  @throw std::invalid_argument on the same conditions as chebev2().
+         *  @see chebev2LegacyToStandard()
+         */
+        std::vector<double> polynom::chebev2StandardToLegacy(const std::vector<double>& aij, std::vector<unsigned int> order)
+        {
+            if(order.size() < 1)
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2StandardToLegacy] Errors ***\033[0m Can't convert without knowing the dimensions. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            const unsigned int nx = order[0];
+            const unsigned int ny = (order.size() >= 2)? order[1] : nx;
+
+            if(nx == 0 || ny == 0)
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2StandardToLegacy] Errors ***\033[0m The expansion order is zero along at least one axis. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            if(aij.size() < static_cast<size_t>(nx)*static_cast<size_t>(ny))
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2StandardToLegacy] Errors ***\033[0m The coefficient matrix is too small for the requested order. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            std::vector<double> out(aij);
+
+            // The forward map only ever reads columns 0..ny-2, which it does not modify, so
+            // subtracting the same row sum inverts it exactly.
+            for(unsigned int i = 1; i < nx; i++)
+            {
+                double row = 0.;
+                for(unsigned int j = 0; j + 1 < ny; j++)
+                    row += aij[static_cast<size_t>(i)*static_cast<size_t>(ny) + j];
+
+                out[static_cast<size_t>(i)*static_cast<size_t>(ny) + (ny-1)] -= row;
+            }
+
+            return out;
+        }
+
+        /// @copydoc polynom::chebev2LegacyToStandard(const std::vector<double>&, std::vector<unsigned int>)
+        std::vector<float> polynom::chebev2LegacyToStandard(const std::vector<float>& aij, std::vector<unsigned int> order)
+        {
+            std::vector<double> in;
+            in.reserve(aij.size());
+            for(size_t i = 0; i < aij.size(); i++)
+                in.push_back(static_cast<double>(aij[i]));
+
+            const std::vector<double> out = chebev2LegacyToStandard(in, order);
+
+            std::vector<float> f_out;
+            f_out.reserve(out.size());
+            for(size_t i = 0; i < out.size(); i++)
+                f_out.push_back(static_cast<float>(out[i]));
+
+            return f_out;
+        }
+
+        /// @copydoc polynom::chebev2StandardToLegacy(const std::vector<double>&, std::vector<unsigned int>)
+        std::vector<float> polynom::chebev2StandardToLegacy(const std::vector<float>& aij, std::vector<unsigned int> order)
+        {
+            std::vector<double> in;
+            in.reserve(aij.size());
+            for(size_t i = 0; i < aij.size(); i++)
+                in.push_back(static_cast<double>(aij[i]));
+
+            const std::vector<double> out = chebev2StandardToLegacy(in, order);
+
+            std::vector<float> f_out;
+            f_out.reserve(out.size());
+            for(size_t i = 0; i < out.size(); i++)
+                f_out.push_back(static_cast<float>(out[i]));
+
+            return f_out;
+        }
+
         /**
          * @brief Evaluate polynome \f$ p(x) = \sum_{k=0}^{n-1} a_k x^k\f$ at \f$x\f$.
-         * 
+         *
          * @param x coordinate where to evaluate the polynome
          * @param a vector of polynomial coefficients
          * @return double value of the polynome \f$p(x)\f$ at \f$x\f$.

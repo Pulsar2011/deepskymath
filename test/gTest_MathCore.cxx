@@ -851,6 +851,239 @@ TEST(math_core_test, chebev2_2Kind_rejectsBadInput)
     EXPECT_NO_THROW(polynom::chebev2(x, aij, a, b, order))<<"["<<__LINE__<<"]";
 }
 
+// ---------------------------------------------------------------------------------
+// Legacy basis: the pre-2026 convention in which the coefficients of
+// A&A 707, A227 (2026) are published. chebev2_legacy() reproduces its evaluation and
+// chebev2LegacyToStandard() converts its coefficients, so the two must agree.
+//
+// chebev2_legacy() is implemented as the original loop, not through the conversion,
+// so these tests compare two genuinely independent routes rather than one with
+// itself.
+// ---------------------------------------------------------------------------------
+
+//! Shapes covering square, wide, tall, and the two degenerate cases the defect never
+//! reached. Reused by every legacy test below.
+static std::vector<std::pair<unsigned int,unsigned int> > legacy_shapes()
+{
+    return {{1,1},{1,5},{5,1},{2,2},{3,3},{4,4},{6,6},{2,5},{5,2},{3,7},{7,3}};
+}
+
+//! Converting legacy coefficients and evaluating them with the corrected chebev2 must
+//! reproduce the legacy evaluation exactly. This is the property the conversion exists
+//! for: it is what lets published coefficients be read by a standard evaluator.
+TEST(math_core_test, chebev2_legacy_conversionReproducesLegacy)
+{
+    std::uniform_real_distribution<double> unif_c(-3.,3.);
+    std::default_random_engine re(20260826u);
+
+    double a[2] = {-40., 120.};
+    double b[2] = { 55., 380.};
+
+    const std::vector<std::pair<unsigned int,unsigned int> > shape = legacy_shapes();
+
+    for(size_t s = 0; s < shape.size(); s++)
+    {
+        const unsigned int nx = shape[s].first;
+        const unsigned int ny = shape[s].second;
+
+        std::vector<unsigned int> order = {nx,ny};
+
+        std::vector<double> aij(static_cast<size_t>(nx)*static_cast<size_t>(ny));
+        for(size_t k = 0; k < aij.size(); k++)
+            aij[k] = unif_c(re);
+
+        const std::vector<double> converted = polynom::chebev2LegacyToStandard(aij, order);
+
+        std::uniform_real_distribution<double> unif_x(a[0],b[0]);
+        std::uniform_real_distribution<double> unif_y(a[1],b[1]);
+
+        for(int n = 0; n < 100; n++)
+        {
+            double x[2];
+            x[0] = unif_x(re);
+            x[1] = unif_y(re);
+
+            const double leg = polynom::chebev2_legacy(x, aij      , a, b, order);
+            const double std_= polynom::chebev2       (x, converted, a, b, order);
+
+            EXPECT_NEAR(std_, leg, 1e-9*std::max(1.,std::abs(leg)))
+                <<"order "<<nx<<"x"<<ny<<" at ("<<x[0]<<","<<x[1]<<") ["<<__LINE__<<"]";
+        }
+    }
+}
+
+//! The conversion is an exact involution pair, so a round trip must return the input.
+TEST(math_core_test, chebev2_legacy_conversionRoundTrip)
+{
+    std::uniform_real_distribution<double> unif_c(-3.,3.);
+    std::default_random_engine re(20260826u);
+
+    const std::vector<std::pair<unsigned int,unsigned int> > shape = legacy_shapes();
+
+    for(size_t s = 0; s < shape.size(); s++)
+    {
+        const unsigned int nx = shape[s].first;
+        const unsigned int ny = shape[s].second;
+
+        std::vector<unsigned int> order = {nx,ny};
+
+        std::vector<double> aij(static_cast<size_t>(nx)*static_cast<size_t>(ny));
+        for(size_t k = 0; k < aij.size(); k++)
+            aij[k] = unif_c(re);
+
+        const std::vector<double> there = polynom::chebev2LegacyToStandard(aij  , order);
+        const std::vector<double> back  = polynom::chebev2StandardToLegacy(there, order);
+
+        ASSERT_EQ(there.size(), aij.size())<<"order "<<nx<<"x"<<ny<<" ["<<__LINE__<<"]";
+        ASSERT_EQ(back.size() , aij.size())<<"order "<<nx<<"x"<<ny<<" ["<<__LINE__<<"]";
+
+        for(size_t k = 0; k < aij.size(); k++)
+            EXPECT_NEAR(back[k], aij[k], 1e-12*std::max(1.,std::abs(aij[k])))
+                <<"order "<<nx<<"x"<<ny<<" coefficient "<<k<<" ["<<__LINE__<<"]";
+    }
+}
+
+//! Only the last column of rows 1..nx-1 moves. Row 0, and every shape with nx == 1 or
+//! ny == 1, must come back untouched -- those are exactly the cases the original defect
+//! never reached, so coefficients published for them need no conversion at all.
+TEST(math_core_test, chebev2_legacy_conversionTouchesOnlyLastColumn)
+{
+    std::uniform_real_distribution<double> unif_c(-3.,3.);
+    std::default_random_engine re(20260826u);
+
+    const std::vector<std::pair<unsigned int,unsigned int> > shape = legacy_shapes();
+
+    for(size_t s = 0; s < shape.size(); s++)
+    {
+        const unsigned int nx = shape[s].first;
+        const unsigned int ny = shape[s].second;
+
+        std::vector<unsigned int> order = {nx,ny};
+
+        std::vector<double> aij(static_cast<size_t>(nx)*static_cast<size_t>(ny));
+        for(size_t k = 0; k < aij.size(); k++)
+            aij[k] = unif_c(re);
+
+        const std::vector<double> out = polynom::chebev2LegacyToStandard(aij, order);
+
+        for(unsigned int i = 0; i < nx; i++)
+        for(unsigned int j = 0; j < ny; j++)
+        {
+            const size_t k = static_cast<size_t>(i)*static_cast<size_t>(ny) + j;
+            const bool   moves = (i >= 1) && (j == ny-1) && (ny >= 2);
+
+            if(!moves)
+                EXPECT_DOUBLE_EQ(out[k], aij[k])
+                    <<"order "<<nx<<"x"<<ny<<" ("<<i<<","<<j<<") should not move ["<<__LINE__<<"]";
+        }
+
+        // Degenerate shapes are pure identity.
+        if(nx == 1 || ny == 1)
+            for(size_t k = 0; k < aij.size(); k++)
+                EXPECT_DOUBLE_EQ(out[k], aij[k])
+                    <<"order "<<nx<<"x"<<ny<<" must be identity ["<<__LINE__<<"]";
+    }
+}
+
+//! Where the legacy and the standard evaluation agree by construction, and where they
+//! must not. A silent agreement on every shape would mean chebev2_legacy() is not
+//! actually reproducing the archived behaviour.
+TEST(math_core_test, chebev2_legacy_differsFromStandardExactlyWhereExpected)
+{
+    double a[2] = {-1,-1};
+    double b[2] = { 1, 1};
+    double x[2] = {0.3137,-0.6211};
+
+    const std::vector<std::pair<unsigned int,unsigned int> > shape = legacy_shapes();
+
+    for(size_t s = 0; s < shape.size(); s++)
+    {
+        const unsigned int nx = shape[s].first;
+        const unsigned int ny = shape[s].second;
+
+        std::vector<unsigned int> order = {nx,ny};
+
+        std::vector<double> aij(static_cast<size_t>(nx)*static_cast<size_t>(ny));
+        for(size_t k = 0; k < aij.size(); k++)
+            aij[k] = 1.0 + 0.37*static_cast<double>(k);
+
+        const double leg = polynom::chebev2_legacy(x, aij, a, b, order);
+        const double std_= polynom::chebev2       (x, aij, a, b, order);
+
+        if(nx == 1 || ny == 1)
+            EXPECT_NEAR(leg, std_, 1e-12)
+                <<"order "<<nx<<"x"<<ny<<" was never affected, the two must agree ["<<__LINE__<<"]";
+        else
+            EXPECT_GT(std::abs(leg-std_), 1e-6)
+                <<"order "<<nx<<"x"<<ny<<" must differ, else chebev2_legacy is not "
+                <<"reproducing the archived basis ["<<__LINE__<<"]";
+    }
+}
+
+//! The float overloads must track their double counterparts.
+TEST(math_core_test, chebev2_legacy_float)
+{
+    float  af[2] = {-40.f, 120.f};
+    float  bf[2] = { 55.f, 380.f};
+
+    const std::vector<std::pair<unsigned int,unsigned int> > shape = legacy_shapes();
+
+    for(size_t s = 0; s < shape.size(); s++)
+    {
+        const unsigned int nx = shape[s].first;
+        const unsigned int ny = shape[s].second;
+
+        std::vector<unsigned int> order = {nx,ny};
+
+        std::vector<float> aij(static_cast<size_t>(nx)*static_cast<size_t>(ny));
+        for(size_t k = 0; k < aij.size(); k++)
+            aij[k] = static_cast<float>(1.0 + 0.37*static_cast<double>(k));
+
+        const std::vector<float> converted = polynom::chebev2LegacyToStandard(aij, order);
+
+        ASSERT_EQ(converted.size(), aij.size())<<"["<<__LINE__<<"]";
+
+        for(int ix = 0; ix < 7; ix++)
+        for(int iy = 0; iy < 7; iy++)
+        {
+            float x[2];
+            x[0] = af[0] + (bf[0]-af[0])*static_cast<float>(ix)/6.f;
+            x[1] = af[1] + (bf[1]-af[1])*static_cast<float>(iy)/6.f;
+
+            const double leg  = static_cast<double>(polynom::chebev2_legacy(x, aij      , af, bf, order));
+            const double conv = static_cast<double>(polynom::chebev2       (x, converted, af, bf, order));
+
+            EXPECT_NEAR(conv, leg, 1e-3*std::max(1.,std::abs(leg)))
+                <<"order "<<nx<<"x"<<ny<<" at ("<<x[0]<<","<<x[1]<<") ["<<__LINE__<<"]";
+        }
+    }
+}
+
+//! Malformed input must be rejected by the legacy path and the conversions too.
+TEST(math_core_test, chebev2_legacy_rejectsBadInput)
+{
+    double x[2] = {0.,0.};
+    double a[2] = {-1,-1};
+    double b[2] = { 1, 1};
+
+    std::vector<double> aij(9, 1.);
+    std::vector<unsigned int> empty;
+    std::vector<unsigned int> zero  = {0,3};
+    std::vector<unsigned int> order = {3,3};
+    std::vector<double> small(5, 1.);
+
+    EXPECT_THROW(polynom::chebev2_legacy(x, aij  , a, b, empty), std::invalid_argument)<<"["<<__LINE__<<"]";
+    EXPECT_THROW(polynom::chebev2_legacy(x, aij  , a, b, zero ), std::invalid_argument)<<"["<<__LINE__<<"]";
+    EXPECT_THROW(polynom::chebev2_legacy(x, small, a, b, order), std::invalid_argument)<<"["<<__LINE__<<"]";
+    EXPECT_NO_THROW(polynom::chebev2_legacy(x, aij, a, b, order))<<"["<<__LINE__<<"]";
+
+    EXPECT_THROW(polynom::chebev2LegacyToStandard(aij  , empty), std::invalid_argument)<<"["<<__LINE__<<"]";
+    EXPECT_THROW(polynom::chebev2LegacyToStandard(aij  , zero ), std::invalid_argument)<<"["<<__LINE__<<"]";
+    EXPECT_THROW(polynom::chebev2LegacyToStandard(small, order), std::invalid_argument)<<"["<<__LINE__<<"]";
+    EXPECT_THROW(polynom::chebev2StandardToLegacy(aij  , empty), std::invalid_argument)<<"["<<__LINE__<<"]";
+    EXPECT_THROW(polynom::chebev2StandardToLegacy(small, order), std::invalid_argument)<<"["<<__LINE__<<"]";
+}
+
 //! The float overload widens to double, evaluates, and narrows back, so it is checked
 //! against the same independent reference at a tolerance that admits the round trip.
 TEST(math_core_test, chebev2_2Kind_float)

@@ -106,6 +106,43 @@ namespace DST
                 static double chebev2(double *, std::vector<double>, double *, double *, std::vector<unsigned int> order);
                 static float  chebev2(float  *, std::vector<float>,  float  *, float  *, std::vector<unsigned int> order);
 
+                /**
+                 *  @name Legacy 2D expansion
+                 *  @brief The pre-2026 basis, kept so that published coefficients stay readable.
+                 *
+                 *  @details The tensor product routine that produced the NISP spectroscopic
+                 *  calibration carried a defect: the unit vector driving the second axis was
+                 *  not reset between rows, so from the second row onwards it evaluated
+                 *  \f$T_j(y') + T_{n_y-1}(y')\f$ where \f$T_j(y')\f$ was intended.
+                 *
+                 *  The resulting functions are an invertible linear transformation of the
+                 *  Chebyshev tensor basis, so they span the same space: a surface fitted in
+                 *  the legacy basis is identical to the one a correct implementation would
+                 *  have found, and only its coefficient representation differs. Fits made
+                 *  and evaluated wholly in the legacy convention are therefore correct.
+                 *
+                 *  Coefficients published in A&A 707, A227 (2026),
+                 *  https://doi.org/10.1051/0004-6361/202555859, are given in this legacy
+                 *  basis, as are the calibration products released alongside that paper.
+                 *  Those products carry no keyword identifying the convention and never
+                 *  will, so <b>absence of a convention keyword must be read as legacy</b>.
+                 *
+                 *  Legacy coefficients are NOT Chebyshev coefficients. Do not hand them to
+                 *  chebev2(), to numpy.polynomial.chebyshev.chebval2d, or to any other
+                 *  standard evaluator without converting them first.
+                 *  @{
+                 */
+
+                static double chebev2_legacy(double *, std::vector<double>, double *, double *, std::vector<unsigned int> order);
+                static float  chebev2_legacy(float  *, std::vector<float> , float  *, float  *, std::vector<unsigned int> order);
+
+                static std::vector<double> chebev2LegacyToStandard(const std::vector<double>&, std::vector<unsigned int> order);
+                static std::vector<float>  chebev2LegacyToStandard(const std::vector<float>& , std::vector<unsigned int> order);
+
+                static std::vector<double> chebev2StandardToLegacy(const std::vector<double>&, std::vector<unsigned int> order);
+                static std::vector<float>  chebev2StandardToLegacy(const std::vector<float>& , std::vector<unsigned int> order);
+                /** @} */
+
                 static double polyev(const double&, const std::vector<double>&);
                 static double polyev(const double&, const double *, const size_t&);
                 static double polyev(const double&, const double *, const unsigned int&);
