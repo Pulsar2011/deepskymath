@@ -2,6 +2,11 @@
 #include <DSTmath/DSTmath.h>
 #include <random>
 #include <functional>
+#include <algorithm>
+#include <cmath>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 using namespace DST::Math;
 
@@ -668,116 +673,235 @@ TEST(math_core_test, chebev2_float)
     delete [] b;
 }
 
-TEST(math_core_test, chebev2_2Kind_double)
+// ---------------------------------------------------------------------------------
+// Reference implementation for the tensor product chebev2 overload, deliberately
+// independent of the library: T_k by its own recurrence, and the double sum written
+// out longhand. Comparing the library against a rearrangement of itself is what let
+// the previous version of these tests pass while the function was wrong.
+// ---------------------------------------------------------------------------------
+
+//! T_k(u) by the Chebyshev recurrence, u already mapped onto [-1 ; 1].
+static double ref_chebyshevT(size_t k, double u)
 {
-    double lower_bound = -1;
-    double upper_bound =  1;
-    std::uniform_real_distribution<double> unif_x(lower_bound,upper_bound);
-    std::uniform_real_distribution<double> unif_y(lower_bound,upper_bound);
-    std::default_random_engine re;
+    if(k == 0) return 1.;
+    if(k == 1) return u;
 
-    double* x = new double [2]; x[0] = 0;  x[1] = 0;
-    double* a = new double [2]; a[0] = -1; a[1] = -1;
-    double* b = new double [2]; b[0] =  1; b[1] =  1;
+    double tkm2 = 1.;
+    double tkm1 = u;
 
-    std::vector<double> cx = std::vector<double>(6,0);
-    std::vector<double> cy = std::vector<double>(6,0);
-
-    std::vector<double> aij = std::vector<double>(cx.size()*cy.size(),0);
-    
-    for(size_t N=1; N <= cx.size(); N++)
+    for(size_t n = 2; n <= k; n++)
     {
-        for(size_t i=0; i < N; ++i)
-        {
-            for(unsigned int ii = 0; ii < N; ii++)
-                cx.push_back(((ii+1)==N)?1.:0.);
-
-            for(size_t j=0; j < N; j++)
-            {
-                for(unsigned int jj = 0; jj < N; jj++)
-                    cy.push_back(((jj+1)==N)?1.:0.);
-
-                for(std::vector<double>::iterator it = aij.begin(); it != aij.end(); ++it)
-                    *it = 0;
-
-                size_t k = i*N+j;
-
-                std::vector<unsigned int> nelem = {static_cast<unsigned int>(N),static_cast<unsigned int>(N)};
-
-                for(unsigned int ix =0; ix < 101; ix++)
-                {
-                    x[0] = unif_x(re);
-                    x[1] = unif_y(re);
-
-                    EXPECT_NEAR(polynom::chebev2(x, aij,a,b,nelem),aij[k]*polynom::chebev(x[0],cx,a[0],b[0],cx.size())*polynom::chebev(x[1],cy,a[1],b[1],cy.size()),1e-10)<<N<<std::endl;
-                }
-
-                cy.clear();
-            }
-
-            cx.clear();
-        }
+        const double tk = 2.*u*tkm1 - tkm2;
+        tkm2 = tkm1;
+        tkm1 = tk;
     }
 
-    delete [] x;
-    delete [] a;
-    delete [] b;
+    return tkm1;
 }
 
-TEST(math_core_test, chebev2_2Kind_float)
+//! sum_i sum_j a_ij T_i(x') T_j(y'), with aij flattened row major, rows of length ny.
+static double ref_chebev2(const std::vector<double>& aij,
+                          size_t nx, size_t ny,
+                          double x, double y,
+                          const double* a, const double* b)
 {
-    float lower_bound = -1;
-    float upper_bound =  1;
-    std::uniform_real_distribution<float> unif_x(lower_bound,upper_bound);
-    std::uniform_real_distribution<float> unif_y(lower_bound,upper_bound);
-    std::default_random_engine re;
+    const double u = (2.*x - a[0] - b[0])/(b[0] - a[0]);
+    const double v = (2.*y - a[1] - b[1])/(b[1] - a[1]);
 
-    float* x = new float [2]; x[0] = 0;  x[1] = 0;
-    float* a = new float [2]; a[0] = -1; a[1] = -1;
-    float* b = new float [2]; b[0] =  1; b[1] =  1;
+    double val = 0.;
 
-    std::vector<float> cx = std::vector<float>(6,0);
-    std::vector<float> cy = std::vector<float>(6,0);
+    for(size_t i = 0; i < nx; i++)
+        for(size_t j = 0; j < ny; j++)
+            val += aij[i*ny + j]*ref_chebyshevT(i,u)*ref_chebyshevT(j,v);
 
-    std::vector<float> aij = std::vector<float>(cx.size()*cy.size(),0);
-    
-    for(size_t N=1; N <= cx.size(); N++)
+    return val;
+}
+
+//! One coefficient set to 1 and the rest to 0 must reproduce that single basis product.
+TEST(math_core_test, chebev2_2Kind_singleBasisTerm_double)
+{
+    double a[2] = {-1,-1};
+    double b[2] = { 1, 1};
+
+    const std::vector<std::pair<unsigned int,unsigned int> > shape =
+        {{1,1},{2,2},{3,3},{4,4},{2,5},{5,2},{3,7},{7,3}};
+
+    for(size_t s = 0; s < shape.size(); s++)
     {
-        for(size_t i=0; i < N; ++i)
+        const unsigned int nx = shape[s].first;
+        const unsigned int ny = shape[s].second;
+
+        std::vector<unsigned int> order = {nx,ny};
+
+        for(unsigned int i = 0; i < nx; i++)
+        for(unsigned int j = 0; j < ny; j++)
         {
-            for(unsigned int ii = 0; ii < N; ii++)
-                cx.push_back(((ii+1)==N)?1.:0.);
+            std::vector<double> aij(static_cast<size_t>(nx)*static_cast<size_t>(ny), 0.);
+            aij[static_cast<size_t>(i)*static_cast<size_t>(ny) + j] = 1.;
 
-            for(size_t j=0; j < N; j++)
+            for(int ix = 0; ix < 11; ix++)
+            for(int iy = 0; iy < 11; iy++)
             {
-                for(unsigned int jj = 0; jj < N; jj++)
-                    cy.push_back(((jj+1)==N)?1.:0.);
+                double x[2];
+                x[0] = -1. + 0.2*static_cast<double>(ix);
+                x[1] = -1. + 0.2*static_cast<double>(iy);
 
-                for(std::vector<float>::iterator it = aij.begin(); it != aij.end(); ++it)
-                    *it = 0;
-
-                size_t k = i*N+j;
-
-                std::vector<unsigned int> nelem = {static_cast<unsigned int>(N),static_cast<unsigned int>(N)};
-
-                for(unsigned int ix =0; ix < 101; ix++)
-                {
-                    x[0] = unif_x(re);
-                    x[1] = unif_y(re);
-
-                    EXPECT_NEAR(polynom::chebev2(x, aij,a,b,nelem),aij[k]*polynom::chebev(x[0],cx,a[0],b[0],cx.size())*polynom::chebev(x[1],cy,a[1],b[1],cy.size()),1e-10)<<N<<std::endl;
-                }
-
-                cy.clear();
+                EXPECT_NEAR(polynom::chebev2(x, aij, a, b, order),
+                            ref_chebyshevT(i,x[0])*ref_chebyshevT(j,x[1]),
+                            1e-10)
+                    <<"order "<<nx<<"x"<<ny<<" basis term ("<<i<<","<<j<<")"
+                    <<" at ("<<x[0]<<","<<x[1]<<") ["<<__LINE__<<"]";
             }
-
-            cx.clear();
         }
     }
+}
 
-    delete [] x;
-    delete [] a;
-    delete [] b;
+//! Dense coefficient matrices, square and rectangular, on a range that is not [-1 ; 1].
+TEST(math_core_test, chebev2_2Kind_double)
+{
+    std::uniform_real_distribution<double> unif_c(-3.,3.);
+    std::default_random_engine re(20260826u);
+
+    // Deliberately asymmetric and not the canonical [-1 ; 1], so that a missing or wrong
+    // affine mapping onto the Chebyshev domain shows up.
+    double a[2] = {-40., 120.};
+    double b[2] = { 55., 380.};
+
+    const std::vector<std::pair<unsigned int,unsigned int> > shape =
+        {{1,1},{2,2},{3,3},{4,4},{6,6},{2,5},{5,2},{3,7},{7,3},{1,6},{6,1}};
+
+    for(size_t s = 0; s < shape.size(); s++)
+    {
+        const unsigned int nx = shape[s].first;
+        const unsigned int ny = shape[s].second;
+
+        std::vector<unsigned int> order = {nx,ny};
+
+        std::vector<double> aij(static_cast<size_t>(nx)*static_cast<size_t>(ny));
+        for(size_t k = 0; k < aij.size(); k++)
+            aij[k] = unif_c(re);
+
+        std::uniform_real_distribution<double> unif_x(a[0],b[0]);
+        std::uniform_real_distribution<double> unif_y(a[1],b[1]);
+
+        for(int n = 0; n < 200; n++)
+        {
+            double x[2];
+            x[0] = unif_x(re);
+            x[1] = unif_y(re);
+
+            const double expected = ref_chebev2(aij,nx,ny,x[0],x[1],a,b);
+
+            EXPECT_NEAR(polynom::chebev2(x, aij, a, b, order), expected,
+                        1e-9*std::max(1.,std::abs(expected)))
+                <<"order "<<nx<<"x"<<ny<<" at ("<<x[0]<<","<<x[1]<<") ["<<__LINE__<<"]";
+        }
+    }
+}
+
+//! A single order entry means a square expansion.
+TEST(math_core_test, chebev2_2Kind_impliedSquareOrder_double)
+{
+    double a[2] = {-1,-1};
+    double b[2] = { 1, 1};
+
+    std::vector<double> aij = {1.5,-2.5,0.75,3.25};
+
+    std::vector<unsigned int> one = {2};
+    std::vector<unsigned int> two = {2,2};
+
+    for(int ix = 0; ix < 11; ix++)
+    for(int iy = 0; iy < 11; iy++)
+    {
+        double x[2];
+        x[0] = -1. + 0.2*static_cast<double>(ix);
+        x[1] = -1. + 0.2*static_cast<double>(iy);
+
+        EXPECT_NEAR(polynom::chebev2(x, aij, a, b, one),
+                    polynom::chebev2(x, aij, a, b, two), 1e-12)<<"["<<__LINE__<<"]";
+    }
+}
+
+//! Malformed input must be rejected rather than silently producing a number.
+TEST(math_core_test, chebev2_2Kind_rejectsBadInput)
+{
+    double x[2] = {0.,0.};
+    double a[2] = {-1,-1};
+    double b[2] = { 1, 1};
+
+    std::vector<double> aij(9, 1.);
+
+    // No order at all.
+    std::vector<unsigned int> empty;
+    EXPECT_THROW(polynom::chebev2(x, aij, a, b, empty), std::invalid_argument)<<"["<<__LINE__<<"]";
+
+    // A zero order used to return 0, indistinguishable from a null expansion.
+    std::vector<unsigned int> zero_x = {0,3};
+    EXPECT_THROW(polynom::chebev2(x, aij, a, b, zero_x), std::invalid_argument)<<"["<<__LINE__<<"]";
+
+    std::vector<unsigned int> zero_y = {3,0};
+    EXPECT_THROW(polynom::chebev2(x, aij, a, b, zero_y), std::invalid_argument)<<"["<<__LINE__<<"]";
+
+    // Coefficient matrix too small for the requested order.
+    std::vector<double> small(5, 1.);
+    std::vector<unsigned int> order = {3,3};
+    EXPECT_THROW(polynom::chebev2(x, small, a, b, order), std::invalid_argument)<<"["<<__LINE__<<"]";
+
+    // Exactly the right size must not throw.
+    EXPECT_NO_THROW(polynom::chebev2(x, aij, a, b, order))<<"["<<__LINE__<<"]";
+}
+
+//! The float overload widens to double, evaluates, and narrows back, so it is checked
+//! against the same independent reference at a tolerance that admits the round trip.
+TEST(math_core_test, chebev2_2Kind_float)
+{
+    std::uniform_real_distribution<double> unif_c(-3.,3.);
+    std::default_random_engine re(20260826u);
+
+    float  af[2] = {-40.f, 120.f};
+    float  bf[2] = { 55.f, 380.f};
+    double ad[2] = {-40. , 120. };
+    double bd[2] = { 55. , 380. };
+
+    const std::vector<std::pair<unsigned int,unsigned int> > shape =
+        {{1,1},{2,2},{3,3},{4,4},{2,5},{5,2},{3,7},{7,3}};
+
+    for(size_t s = 0; s < shape.size(); s++)
+    {
+        const unsigned int nx = shape[s].first;
+        const unsigned int ny = shape[s].second;
+
+        std::vector<unsigned int> order = {nx,ny};
+
+        std::vector<float>  aij_f(static_cast<size_t>(nx)*static_cast<size_t>(ny));
+        std::vector<double> aij_d(aij_f.size());
+
+        for(size_t k = 0; k < aij_f.size(); k++)
+        {
+            aij_d[k] = unif_c(re);
+            aij_f[k] = static_cast<float>(aij_d[k]);
+            aij_d[k] = static_cast<double>(aij_f[k]); // compare like with like
+        }
+
+        std::uniform_real_distribution<double> unif_x(ad[0],bd[0]);
+        std::uniform_real_distribution<double> unif_y(ad[1],bd[1]);
+
+        for(int n = 0; n < 100; n++)
+        {
+            float  xf[2];
+            double xd[2];
+
+            xd[0] = unif_x(re); xf[0] = static_cast<float>(xd[0]); xd[0] = static_cast<double>(xf[0]);
+            xd[1] = unif_y(re); xf[1] = static_cast<float>(xd[1]); xd[1] = static_cast<double>(xf[1]);
+
+            const double expected = ref_chebev2(aij_d,nx,ny,xd[0],xd[1],ad,bd);
+
+            EXPECT_NEAR(static_cast<double>(polynom::chebev2(xf, aij_f, af, bf, order)),
+                        expected,
+                        1e-4*std::max(1.,std::abs(expected)))
+                <<"order "<<nx<<"x"<<ny<<" at ("<<xf[0]<<","<<xf[1]<<") ["<<__LINE__<<"]";
+        }
+    }
 }
 
 TEST(math_core_test, polynomial)

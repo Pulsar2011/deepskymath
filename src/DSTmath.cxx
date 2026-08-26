@@ -1034,63 +1034,83 @@ namespace DST
          *  Evaluate the 2D Chebychev polynomial expansion at \f$(x,y)\f$ include in the range \f$[(a_x,a_y); (b_x,b_y)[\f$. This 2D Chebyshev polynomial expansion, defined as \f$\sum_{i=0}^{n-1}\sum_{j=0}^{m-1} a_{ij}T_i(x')T_j(y')\f$ is evaluated at a point \f$ x' = \frac{x − 0.5(b_x + a_x)}{0.5(b_x − a_x)}\f$ and \f$ y' = \frac{y − 0.5(b_y + a_y)}{0.5(b_y − a_y)}\f$.
          *
          *  @param x evaluate chebycgev polynom expansion at cartesian coordinates \f$(x,y)\f$. x myst be a 2D array.
-         *  @param aij 2D Chebychev coefficient of the polynom order ij
+         *  @param aij Coefficient matrix \f$a_{ij}\f$, flattened <b>row major</b>: the coefficient multiplying \f$T_i(x')T_j(y')\f$ sits at index \f$i\,n_y + j\f$, so the matrix holds \f$n_x\f$ rows of \f$n_y\f$ entries each. Entries beyond \f$n_x n_y\f$ are ignored.
          *  @param a Lower edge of the range. a must be a 2D array
          *  @param b Upper edge of the range. b must be a 2D array
-         *  @param n Truncate Chebychev polynom coefficients along \f$x\f$ and \f$y\f$ axis. If \f$n_i < 0\f$ all chebychev coeficient \f$c_i\f$ along the \f$i\f$ axis are used.
+         *  @param order Expansion order along \f$x\f$ and \f$y\f$, i.e. \f$\{n_x, n_y\}\f$. A single entry means \f$n_y = n_x\f$. Both must be non zero.
          *
-         *  @return \f$\sum_{i=0}^{n[0]}\sum_{j=0}^{n[1]}a_{ij}T_i(x)T_j(y)\f$
+         *  @return \f$\sum_{i=0}^{n_x-1}\sum_{j=0}^{n_y-1}a_{ij}T_i(x')T_j(y')\f$
+         *
+         *  @throw std::invalid_argument when order is empty, when either order is zero, or when aij is too small to hold \f$n_x n_y\f$ coefficients.
          */
         double polynom::chebev2(double *x, std::vector<double> aij, double *a, double *b, std::vector<unsigned int> order)
         {
             if(order.size() < 1)
                 throw std::invalid_argument(std::string("\033[31m[polynom::chebev2] Errors ***\033[0m Can't compute chebichev polynome without knowing its dimensions. ["+std::to_string(__LINE__)+std::string("]")).c_str());
 
-            
-            unsigned int nx = order[0];
-            unsigned int ny = (order.size() >= 2)? order[1] : nx;
-            
-            if(aij.size() < static_cast<size_t>(nx*ny))
+
+            const unsigned int nx = order[0];
+            const unsigned int ny = (order.size() >= 2)? order[1] : nx;
+
+            // A zero order used to leave the accumulation loop empty and return 0, which is
+            // indistinguishable from a genuinely null expansion.
+            if(nx == 0 || ny == 0)
+                throw std::invalid_argument(std::string("\033[31m[polynom::chebev2] Errors ***\033[0m The chebychev expansion order is zero along at least one axis. ["+std::to_string(__LINE__)+std::string("]")).c_str());
+
+            // Widened before multiplying: nx*ny in unsigned int can wrap and let an
+            // undersized coefficient matrix through the check.
+            if(aij.size() < static_cast<size_t>(nx)*static_cast<size_t>(ny))
                 throw std::invalid_argument(std::string("\033[31m[polynom::chebev2] Errors ***\033[0m The dimensions of the truncated chebychev coeficient 'a' are insuficient. ["+std::to_string(__LINE__)+std::string("]")).c_str());
-            
-            std::vector<double> cx;
-            for(unsigned int i = 0; i < nx; i++)
-                cx.push_back(0.);
 
-            std::vector<double> cy;
-            for(unsigned int j = 0; j < ny; j++)
-                cy.push_back(0.);
-            
-            double val = 0;
-            
-            for(size_t i = 0; i < cx.size(); i++)
+            // T_i(x') is needed by every term of the j sum and T_j(y') by every term of the
+            // i sum, so each axis is evaluated once per index rather than once per (i,j)
+            // pair. chebev() applied to the i-th unit vector returns exactly T_i: it returns
+            // y*d + c[0] - dd, carrying no Numerical Recipes style halving of the constant
+            // term, so T_0 comes back as 1.
+            //
+            // Building each unit vector fresh is also what removes the reset bug this
+            // replaces. That version carried a single cy across the whole double loop and
+            // cleared entry j-1 at step j, so the last entry set by one pass of the inner
+            // loop was never cleared when the inner loop restarted: from the second i
+            // onwards cy held two non-zero entries and had stopped being a unit vector.
+            // Every term past the first row was therefore wrong, for square matrices too.
+            std::vector<double> Tx(nx, 0.);
+            std::vector<double> Ty(ny, 0.);
+
             {
-                if(i>0)
-                    cx[i-1] *=0;
+                std::vector<double> e(nx, 0.);
 
-                cx[i]+=1.;
-
-                for(size_t j = 0; j < cy.size(); j++)
+                for(unsigned int i = 0; i < nx; i++)
                 {
-                    size_t k = i*static_cast<size_t>(nx)+j;
-                    if(k >= aij.size())
-                        throw std::invalid_argument(std::string("\033[31m[polynom::chebev2] Errors ***\033[0m The dimensions of the truncated chebychev coeficient 'a' are insuficient. ["+std::to_string(__LINE__)+std::string("]")).c_str());
-
-                    if(j>0)
-                        cy[j-1] *=0;
-
-                    cy[j]+=1.;
-
-                    val += aij[k]*chebev(x[0],cx,a[0],b[0],cx.size())*chebev(x[1],cy,a[1],b[1],cy.size());
-
+                    e[i]  = 1.;
+                    Tx[i] = chebev(x[0], e, a[0], b[0], nx);
+                    e[i]  = 0.;
                 }
             }
 
-            cx.clear();
-            cy.clear();
-            
+            {
+                std::vector<double> e(ny, 0.);
+
+                for(unsigned int j = 0; j < ny; j++)
+                {
+                    e[j]  = 1.;
+                    Ty[j] = chebev(x[1], e, a[1], b[1], ny);
+                    e[j]  = 0.;
+                }
+            }
+
+            double val = 0;
+
+            // Row major: the stride of a row is n_y, its length. It used to be n_x, the
+            // number of rows, so the indexing was only self consistent on a square matrix:
+            // with n_x > n_y it ran past the end and tripped the bounds check, and with
+            // n_x < n_y it silently read the wrong coefficients.
+            for(size_t i = 0; i < static_cast<size_t>(nx); i++)
+                for(size_t j = 0; j < static_cast<size_t>(ny); j++)
+                    val += aij[i*static_cast<size_t>(ny)+j]*Tx[i]*Ty[j];
+
             return val;
-            
+
         }
         
         /**
