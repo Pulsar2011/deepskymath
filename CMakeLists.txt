@@ -228,6 +228,18 @@ add_library(
     ${version_file}
 )
 
+# Propagate the git tag to the library. A clone without a reachable tag (e.g. a shallow CI clone)
+# has no numeric version: the library stays unversioned and no CMake package is installed.
+if(VERSION MATCHES "^v[0-9]+\\.[0-9]+\\.[0-9]+")
+    set(DSTmath_NUMERIC_VERSION "${VERSION_MAJOR}.${VERSION_MINOR}.${VERSION_PATCH}")
+    set_target_properties(DSTmath PROPERTIES
+        VERSION   "${DSTmath_NUMERIC_VERSION}"
+        SOVERSION "${VERSION_MAJOR}"
+    )
+else()
+    message(WARNING "No version tag found (git describe gave '${VERSION}'): DSTmath will not be versioned")
+endif()
+
 #-------------------- Configuration des test
 add_subdirectory(googletest   EXCLUDE_FROM_ALL)
 include_directories(${PARENT_PATH_OF_GTEST}/googltest/googltest/include)
@@ -286,6 +298,7 @@ CMakeFiles
 ./build/lib
 ./build/exe
 ./build/test
+./build/cmake
 ./doc
 ./googletest/CMakeFiles
 ./googletest/Makefile
@@ -315,4 +328,42 @@ if(CMAKE_INSTALL_PREFIX)
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib
 )
+
+    if(DSTmath_NUMERIC_VERSION)
+        # CMake package, so that dependent projects can call find_package(DSTmath <version>)
+        include(CMakePackageConfigHelpers)
+        set(DSTmath_CMAKE_DIR lib/cmake/DSTmath)
+        configure_package_config_file(
+            ${CMAKE_SOURCE_DIR}/modules/DSTmathConfig.cmake.in
+            ${CMAKE_CURRENT_BINARY_DIR}/build/cmake/DSTmathConfig.cmake
+            INSTALL_DESTINATION ${DSTmath_CMAKE_DIR}
+        )
+        write_basic_package_version_file(
+            ${CMAKE_CURRENT_BINARY_DIR}/build/cmake/DSTmathConfigVersion.cmake
+            VERSION ${DSTmath_NUMERIC_VERSION}
+            COMPATIBILITY AnyNewerVersion
+        )
+        INSTALL(FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/build/cmake/DSTmathConfig.cmake
+            ${CMAKE_CURRENT_BINARY_DIR}/build/cmake/DSTmathConfigVersion.cmake
+            DESTINATION ${DSTmath_CMAKE_DIR}
+        )
+
+        # CMake never removes files from the install directory: drop the versioned libraries
+        # (libDSTmath.0.1.3.dylib, libDSTmath.so.0.1.3, ...) left behind by previous installs.
+        install(CODE "set(DSTmath_KEEP_VERSIONS \"${DSTmath_NUMERIC_VERSION};${VERSION_MAJOR}\")")
+        install(CODE [[
+            file(GLOB _dsm_libs "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/lib/libDSTmath.*")
+            foreach(_dsm_lib ${_dsm_libs})
+                get_filename_component(_dsm_name "${_dsm_lib}" NAME)
+                if(_dsm_name MATCHES "^libDSTmath\\.(so\\.)?([0-9.]*[0-9])(\\.dylib)?$")
+                    list(FIND DSTmath_KEEP_VERSIONS "${CMAKE_MATCH_2}" _dsm_keep)
+                    if(_dsm_keep EQUAL -1)
+                        message(STATUS "Removing old library: ${_dsm_lib}")
+                        file(REMOVE "${_dsm_lib}")
+                    endif()
+                endif()
+            endforeach()
+        ]])
+    endif()
 endif(CMAKE_INSTALL_PREFIX)

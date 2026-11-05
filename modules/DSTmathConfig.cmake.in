@@ -1,0 +1,11 @@
+@PACKAGE_INIT@
+
+if(NOT TARGET DSTmath::DSTmath)
+    add_library(DSTmath::DSTmath SHARED IMPORTED)
+    set_target_properties(DSTmath::DSTmath PROPERTIES
+        IMPORTED_LOCATION "${PACKAGE_PREFIX_DIR}/lib/libDSTmath${CMAKE_SHARED_LIBRARY_SUFFIX}"
+        INTERFACE_INCLUDE_DIRECTORIES "${PACKAGE_PREFIX_DIR}/include"
+    )
+endif()
+
+check_required_components(DSTmath)
