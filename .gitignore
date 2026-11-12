@@ -96,3 +96,7 @@ googletest/generated
 #--------------- MISC
 .gitlab-ci-local
 cmake_test*
+
+# Build trees of the CMake presets (build/ is ignored above), and personal presets
+build-*/
+CMakeUserPresets.json

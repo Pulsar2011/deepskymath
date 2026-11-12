@@ -4,14 +4,26 @@ The DSTmath library of the DeepSky Project: the mathematical, array and geometry
 
 ## Building
 
-Requires GSL and Boost.
+Requires GSL.
+
+Everything is built out of source: configuring in the source directory (`cmake .`) is refused.
 
 ```bash
 git submodule update --init --recursive
-cmake .
-make -j
-make install
+cmake --preset default        # Release, in build/      (or: cmake -B build)
+cmake --build build -j
+ctest --preset default        # the tests run in build/, and what they write stays there
+cmake --build build --target install
 ```
+
+Other presets: `debug` (Debug, in `build-debug/`) and `asan` (Debug + AddressSanitizer, in `build-asan/`):
+`cmake --preset asan && cmake --build --preset asan -j && ctest --preset asan`.
+
+Options: `-DCMAKE_INSTALL_PREFIX=<path>` (default: `$DeepSkyROOT`, or the parent directory), `-DWITH_ASAN=ON`,
+`-DBUILD_TESTS=OFF`. `-DWITH_DEBUG=ON` is deprecated: it means Debug + AddressSanitizer.
+
+Former in-source builds left files in the sources (`CMakeCache.txt`, `Makefile`, `lib/`, ...); remove them once
+with `cmake -P cmake/CleanInSourceBuild.cmake`.
 
 ## License
 
