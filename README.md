@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="m78_v3_stamped.png" alt="DeepSkySys" width="150">
+</p>
+
 # DeepSkyMath
 
 The DSTmath library of the DeepSky Project: the mathematical, array and geometry tools shared by the DeepSky libraries and tools.

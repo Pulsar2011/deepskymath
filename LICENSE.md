@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="by-nc.png" alt="DeepSkySys" width="150">
+</p>
+
 # License
 
 This is the DeepSkyMath library (DSTmath).

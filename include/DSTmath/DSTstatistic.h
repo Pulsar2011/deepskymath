@@ -499,6 +499,9 @@ namespace DST
     protected:
         double pdf_norme;
 
+        /// @brief Random engine, for a derived class that replaces gen().
+        std::mt19937_64& engine() { return rndgen; }
+
 #pragma region - constructor/destructor
 
         pdf (const std::string n = "unamed");
@@ -573,8 +576,8 @@ namespace DST
 
 #pragma region - Random kernel
 
-        virtual double operator()(void) final;
-        virtual double gen(void) final;
+        virtual double operator()(void) final; ///< Random number from the PDF: calls gen()
+        virtual double gen(void);              ///< Slice sampling; a derived class may replace it
 
 #pragma endregion
 
@@ -696,8 +699,7 @@ namespace DST
 
 #pragma region - crystall-ball distribution
     /**
-     * @brief  Chi2  distribution function
-     * 
+     * @brief  Crystall-Ball distribution function. See SLAC-R-236 (1980) Appendix D.
      */
 
     class Cball_distribution : public pdf
@@ -722,6 +724,106 @@ namespace DST
             
         protected:
             double crystall_ball(const double& x, const pdf_param& p) const;
+    };
+#pragma endregion
+
+#pragma region - standard Landau distribution
+    /**
+     * @class standardLandau DSTstatistic.h "DSTmath/DSTstatistic.h"
+     * @brief Standard Landau distribution \f$\varphi(\lambda)\f$ (mode at \c lambda_mode, unit width), tabulated once.
+     * @details Singleton: the table of the cumulative distribution is built at the first call of instance()
+     *          (thread-safe initialisation), then only read, by every Landau_distribution.
+     *          Density: Kolbig & Schorr, Comput. Phys. Commun. 31 (1984) 97 (CERNLIB G110 DENLAN).
+     *          Cumulative distribution: Simpson integration of the density on \c nCore uniform intervals of
+     *          [lambda0, lambdaC], then \c nTail geometric intervals up to lambdaN. Above lambdaN, the analytical
+     *          tail \f$ 1 - F(\lambda) \simeq 1/(\lambda - \ln\lambda) \f$.
+     */
+    class standardLandau
+    {
+        public:
+            static constexpr double lambda_mode = -0.22278298;   ///< Mode of the standard Landau
+
+            static const standardLandau& instance();             ///< The table, built on the first call
+
+            standardLandau(const standardLandau&)            = delete;
+            standardLandau& operator=(const standardLandau&) = delete;
+
+            static double density(const double& l);              ///< phi(lambda)
+            double cdf     (const double& l) const;              ///< Integral of phi up to lambda
+            double quantile(const double& u) const;              ///< lambda such that cdf(lambda) = u
+
+            /// @brief 1 - cdf(lambda), for lambda >> 1
+            inline static double upperTail(const double& l) { return 1. / (l - std::log(l)); }
+
+        private:
+            static constexpr double lambda0 = -6.;    ///< First node, F(lambda0) ~ 1e-60
+            static constexpr double lambdaC = 20.;    ///< End of the uniform part
+            static constexpr double lambdaN = 1e6;    ///< Last node, 1 - F(lambdaN) ~ 1e-6
+            static constexpr size_t nCore   = 2600;   ///< Uniform intervals (step 0.01)
+            static constexpr size_t nTail   = 1100;   ///< Geometric intervals (ratio ~1.01)
+
+            std::vector<double> lambda;   ///< Nodes
+            std::vector<double> phi;      ///< Density at the nodes
+            std::vector<double> F;        ///< Cumulative probability at the nodes
+            double norm = 1.;             ///< Normalisation applied to the Simpson sums
+
+            standardLandau();             ///< Builds the table
+
+            double rawSimpsonIntegral(const size_t& i, const double& l) const;   ///< Integral of phi from node i to l
+            double cdfFromNode(const size_t& i, const double& l) const { return F[i] + norm * rawSimpsonIntegral(i, l); }
+
+            size_t lambda_interval(double l) const {return static_cast<size_t>(std::upper_bound(lambda.begin(), lambda.end(), l) - lambda.begin()) - 1;}
+            size_t F_interval     (double u) const {return static_cast<size_t>(std::upper_bound(F.begin(), F.end(), u) - F.begin()) - 1;}
+    };
+#pragma endregion
+
+#pragma region - Landau distribution
+    /**
+     * @class Landau_distribution DSTstatistic.h "DSTmath/DSTstatistic.h"
+     * @brief Landau distribution of most probable value \c mpv and width \c xi.
+     * @details \f$ f(x) = \varphi(\lambda)/\xi \f$, \f$ \lambda = (x - mpv)/\xi + \lambda_{mode} \f$, \f$\varphi\f$ being the
+     *          standard Landau density (standardLandau).
+     *          Random numbers invert the cumulative distribution of the standard Landau, read from the standardLandau
+     *          table: they are independent and follow the distribution restricted to [lowEdge(), upEdge()].
+     *          Default range: lambda in [lambda_low, lambda_up], i.e. 99.9 % of the distribution. MPV() and Xi()
+     *          restore it.
+     */
+    class Landau_distribution : public pdf
+    {
+        private:
+            double mpv, xi;                            ///< probable value \c mpv and width \c xi
+            double F_low, F_up;                        ///< cdfAt() at the edges of the range
+            void init();                               // clear(), add_pdf(landau), setRange
+            inline double lambdaAt(double x) const { return (x - mpv) / xi + standardLandau::lambda_mode; }
+            inline double xAt(double l)      const { return mpv + xi * (l - standardLandau::lambda_mode); }
+
+        public:
+            static constexpr double lambda_low  = -4.;           ///< Default lower edge (lambda), F ~ 2e-10
+            static constexpr double lambda_up   = 1000.;         ///< Default upper edge (lambda), 1 - F ~ 1e-3
+
+
+            Landau_distribution(const double& mpv, const double& xi);
+            Landau_distribution(const Landau_distribution& N);
+
+            void MPV(const double& m){ mpv = m; init(); }
+            void Xi (const double& s){ xi  = s; init(); }
+            void setRange(const double& a, const double& b);
+
+            inline double getMPV() const override { return mpv; }
+
+            double getIntegral(const double& a, const double& b, size_t nStep = 1000) const override;
+            double getIntegral(size_t nStep = 1000) const override { return 1.0; }
+            cdf_t  cdf(const size_t& nBins, size_t nStep = 1000) const override;
+            
+
+
+            double cdfAt(const double& x) const;      ///< P(X <= x), whole distribution
+            double quantile(const double& u) const;   ///< x such that cdfAt(x) = u
+
+            double gen(void) override;                ///< Inverse CDF, u uniform in [F_low, F_up)
+
+        protected:
+            double landau(const double& x, const pdf_param& p) const;   ///< p = {mpv, xi}
     };
 #pragma endregion
 

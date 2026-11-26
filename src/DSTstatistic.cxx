@@ -2686,11 +2686,6 @@ namespace DST
 
         double pdf::gen(void)
         {
-            return this->operator()();
-        }
-
-        double pdf::operator()(void)
-        {
             if(fpdf.size() == 0)
                 return 0;
 
@@ -2717,6 +2712,11 @@ namespace DST
             //fmax = (ySlice > fmax) ? ySlice : fmax;
 
             return xSlice;
+        }
+
+        double pdf::operator()(void)
+        {
+            return gen();
         }
 #pragma endregion
 
@@ -3118,7 +3118,256 @@ namespace DST
 #pragma endregion
 #pragma endregion
 
+#pragma region - standard Landau distribution
+#pragma region -- singleton
+        const standardLandau& standardLandau::instance()
+        {
+            static const standardLandau table;   // built on the first call; thread-safe initialisation (C++11)
+            return table;
+        }
 
+        /// @brief Tabulate phi and its cumulative distribution F on the nodes.
+        standardLandau::standardLandau()
+        {
+            const double r = std::log(lambdaN / lambdaC) / static_cast<double>(nTail);
+
+            lambda.reserve(nCore + nTail + 1);
+            for(size_t k = 0; k <= nCore; k++)
+                lambda.push_back(lambda0 + (lambdaC - lambda0) * static_cast<double>(k) / static_cast<double>(nCore));
+
+            for(size_t k = 1; k <= nTail; k++)
+                lambda.push_back(lambdaC * std::exp(r * static_cast<double>(k)));
+
+            phi.reserve(lambda.size());
+            for(const double& l : lambda)
+                phi.push_back(density(l));
+
+            F.assign(lambda.size(), 0.);
+            for(size_t i = 1; i < lambda.size(); i++)
+                F[i] = F[i-1] + rawSimpsonIntegral(i-1, lambda[i]);
+
+            // The mass above the last node is the analytical tail
+            norm = (1. - upperTail(lambda.back())) / F.back();
+            for(double& f : F)
+                f *= norm;
+        }
+#pragma endregion
+#pragma region -- density
+        /// @brief Standard Landau density phi(v): rational approximations of Kolbig & Schorr,
+        ///        Comput. Phys. Commun. 31 (1984) 97 (CERNLIB G110, DENLAN), one per range of v.
+        ///        Inspired from https://cgit.git.savannah.gnu.org/cgit/gsl.git/plain/randist/landau.c
+        double standardLandau::density(const double& v)
+        {
+            constexpr double p1[5] = {0.4259894875  , -0.1249762550   ,  0.3984243700e-1,-0.6298287635e-2,  0.1511162253e-2};
+            constexpr double p2[5] = {0.1788541609  ,  0.1173957403   ,  0.1488850518e-1,-0.1394989411e-2,  0.1283617211e-3};
+            constexpr double p3[5] = {0.1788544503  ,  0.9359161662e-1,  0.6325387654e-2, 0.6611667319e-4, -0.2031049101e-5};
+            constexpr double p4[5] = {0.9874054407  ,  0.1186723273e+3,  0.8492794360e+3,-0.7437792444e+3,  0.4270262186e+3};
+            constexpr double p5[5] = {0.1003675074e+1, 0.1675702434e+3,  0.4789711289e+4, 0.2121786767e+5, -0.2232494910e+5};
+            constexpr double p6[5] = {0.1000827619e+1, 0.6649143136e+3,  0.6297292665e+5, 0.4755546998e+6, -0.5743609109e+7};
+
+            constexpr double q1[5] = {1.0, -0.3388260629   , 0.9594393323e-1, -0.1608042283e-1,  0.3778942063e-2};
+            constexpr double q2[5] = {1.0,  0.7428795082   , 0.3153932961   ,  0.6694219548e-1,  0.8790609714e-2};
+            constexpr double q3[5] = {1.0,  0.6097809921   , 0.2560616665   ,  0.4746722384e-1,  0.6957301675e-2};
+            constexpr double q4[5] = {1.0,  0.1068615961e+3, 0.3376496214e+3,  0.2016712389e+4,  0.1597063511e+4};
+            constexpr double q5[5] = {1.0,  0.1569424537e+3, 0.3745310488e+4,  0.9834698876e+4,  0.6692428357e+5};
+            constexpr double q6[5] = {1.0,  0.6514101098e+3, 0.5697473333e+5,  0.1659174725e+6, -0.2815759939e+7};
+            
+            constexpr double a1[3] = { 0.4166666667e-1, -0.1996527778e-1, 0.2709538966e-1};
+            constexpr double a2[2] = {-0.1845568670e+1, -0.4284640743e+1};
+
+            // (p0 + p1 t + ... + p4 t^4) / (q0 + q1 t + ... + q4 t^4)
+            auto ratio = [](const double* p, const double* q, double t)
+            {
+                return (p[0] + t*(p[1] + t*(p[2] + t*(p[3] + t*p[4]))))
+                     / (q[0] + t*(q[1] + t*(q[2] + t*(q[3] + t*q[4]))));
+            };
+
+            if(v < -5.5)
+            {
+                const double u = std::exp(v + 1.);
+                if(u < 1e-10)
+                    return 0.;
+                return 0.3989422803 * std::exp(-1./u) / std::sqrt(u) * (1. + (a1[0] + (a1[1] + a1[2]*u)*u)*u);
+            }
+            else if(v < -1.)
+            {
+                const double u = std::exp(-v - 1.);
+                return std::exp(-u) * std::sqrt(u) * ratio(p1, q1, v);
+            }
+            else if(v < 1.)   
+                return ratio(p2, q2, v);
+            else if(v < 5.)   
+                return ratio(p3, q3, v);
+            else if(v < 12.)
+            { 
+                const double u = 1./v; 
+                return u*u * ratio(p4, q4, u);
+            }
+            else if(v < 50.)
+            { 
+                const double u = 1./v;
+                return u*u * ratio(p5, q5, u);
+            }
+            else if(v < 300.)
+            { 
+                const double u = 1./v;
+                return u*u * ratio(p6, q6, u);
+            }
+
+            const double u = 1. / (v - v* std::log(v) / (v + 1.) );
+            return u*u * (1. + (a2[0] + a2[1]*u)*u);
+        }
+#pragma endregion
+#pragma region -- cumulative distribution
+        /// @brief Raw Simpson integral of phi from node i to l, l in [lambda_i, lambda_i+1].
+        double standardLandau::rawSimpsonIntegral(const size_t& i, const double& l) const
+        {
+            const double d = l - lambda[i];
+            return d / 6. * (phi[i] + 4. * density(lambda[i] + 0.5*d) + density(l));
+        }
+
+        double standardLandau::cdf(const double& l) const
+        {
+            if(l <= lambda.front())
+                return 0.;
+            if(l >= lambda.back())
+                return 1. - upperTail(l);
+
+            return cdfFromNode(lambda_interval(l), l);
+        }
+
+        double standardLandau::quantile(const double& u) const
+        {
+            if(std::isnan(u))
+                return u;
+            if(u <= 0.)
+                return lambda.front();
+            if(u >= 1.)
+                return std::numeric_limits<double>::infinity();
+
+            if(u >= F.back())
+            {
+                // Tail: l - ln(l) = 1/(1-u); the iteration contracts by 1/l ~ 1e-6
+                const double y = 1. / (1. - u);
+                double l = y;
+                for(int k = 0; k < 4; k++)
+                    l = y + std::log(l);
+                return l;
+            }
+
+            const size_t i  = F_interval(u);
+            const double l0 = lambda[i];
+            const double l1 = lambda[i+1];
+            const double dF = F[i+1] - F[i];
+
+            double l = (dF > 0.) ? l0 + (u - F[i]) / dF * (l1 - l0) : l0;
+
+            // Newton on the local CDF: removes the linear interpolation error
+            for(int k = 0; k < 2; k++)
+            {
+                const double f = norm * density(l);
+                if(!(f > 0.))
+                    break;
+                l = std::clamp(l - (cdfFromNode(i, l) - u) / f, l0, l1);
+            }
+
+            return l;
+        }
+#pragma endregion
+#pragma endregion
+
+#pragma region - Landau distribution
+#pragma region -- initialization
+        void Landau_distribution::init()
+        {
+            if(!(xi > 0.))
+                throw std::invalid_argument("\033[31m[Landau_distribution::init]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The width xi must be > 0.\033[0m\n");
+
+            clear();
+
+            pdf_param p = {mpv, xi};
+            add_pdf(static_cast<pdf_function>(&Landau_distribution::landau), p);
+
+            setRange(xAt(lambda_low), xAt(lambda_up));
+        }
+#pragma endregion
+#pragma region -- ctor/dtor        
+
+        Landau_distribution::Landau_distribution(const double& mpv, const double& xi):pdf("Landau"),mpv(mpv),xi(xi),F_low(0.),F_up(1.)
+        {
+            init();
+        }
+        
+        Landau_distribution::Landau_distribution(const Landau_distribution &N):pdf("Landau"),mpv(N.mpv),xi(N.xi),F_low(0.),F_up(1.)
+        {
+            init();
+            setRange(N.lowEdge(), N.upEdge());
+        }
+#pragma endregion
+
+#pragma region -- setter 
+        void Landau_distribution::setRange(const double& a, const double& b)
+        {
+            const double Fa = cdfAt(a);
+            const double Fb = cdfAt(b);
+
+            if(a < b && !(Fb > Fa))
+                throw std::invalid_argument("\033[31m[Landau_distribution::setRange]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     The range holds no probability.\033[0m\n");
+
+            pdf::setRange(a, b);   // throws if a >= b
+            F_low = Fa;
+            F_up  = Fb;
+        }
+#pragma endregion
+#pragma region -- pdf utilities
+        double Landau_distribution::cdfAt(const double& x) const
+        {
+            return standardLandau::instance().cdf(lambdaAt(x));
+        }
+
+        double Landau_distribution::quantile(const double& u) const
+        {
+            return xAt(standardLandau::instance().quantile(u));
+        }
+
+        double Landau_distribution::getIntegral(const double& a, const double& b, size_t nStep) const
+        {
+            if(a >= b || a < lowEdge() || b > upEdge())
+                throw std::invalid_argument("\033[31m[Landau_distribution::getIntegral]\033[43;31m !!! ERROR !!! \033[0m\n\033[33m     Invalid range.\033[0m\n");
+
+            return cdfAt(b) - cdfAt(a);
+        }
+
+        cdf_t Landau_distribution::cdf(const size_t& nBins, size_t nStep) const
+        {
+            if(nBins < 2)
+                throw std::invalid_argument("[Landau_distribution::cdf] At least 2 bins are needed.");
+
+            cdf_t c;
+            c.reserve(nBins);
+
+            const double dx = (upEdge() - lowEdge()) / static_cast<double>(nBins - 1);
+            for(size_t k = 0; k < nBins; k++)
+            {
+                const double x = std::min(lowEdge() + dx * static_cast<double>(k), upEdge());
+                c.push_back(std::make_pair(x, (cdfAt(x) - F_low) / (F_up - F_low)));
+            }
+
+            return c;
+        }
+
+        double Landau_distribution::gen(void)
+        {
+            std::uniform_real_distribution<double> udis(F_low, F_up);
+            return quantile(udis(engine()));
+        }
+
+        double Landau_distribution::landau(const double& x, const pdf_param& p) const
+        {
+            return standardLandau::density((x - p[0]) / p[1] + standardLandau::lambda_mode) / p[1];
+        }
+#pragma endregion
+#pragma endregion
 
     }
         
